@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2016-01-01",
+    "type": "deposit",
+    "amount": 1800000.0,
+    "note": "Initial deposit"
+  },
+  {
+    "date": "2025-02-27",
+    "type": "deposit",
+    "amount": 4635000.0,
+    "note": ""
+  },
+  {
+    "date": "2025-02-27",
+    "type": "deposit",
+    "amount": 9656000.0,
+    "note": ""
+  },
+  {
+    "date": "2025-02-27",
+    "type": "deposit",
+    "amount": 709240.0,
+    "note": ""
+  },
+  {
+    "date": "2025-03-15",
+    "type": "withdrawal",
+    "amount": 2300000.0,
+    "note": ""
+  },
+  {
+    "date": "2026-02-12",
+    "type": "withdrawal",
+    "amount": 1171000.0,
+    "note": ""
+  }
+]

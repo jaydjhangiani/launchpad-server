@@ -1,0 +1,411 @@
+[
+  {
+    "symbol": "PGHH",
+    "name": "PGHH",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2026-02-12",
+        "type": "buy",
+        "shares": 100.0,
+        "price": 11710.0
+      }
+    ]
+  },
+  {
+    "symbol": "HINDUNILVR",
+    "name": "HINDUNILVR",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-06-14",
+        "type": "buy",
+        "shares": 2200.0,
+        "price": 300.92
+      }
+    ]
+  },
+  {
+    "symbol": "ICICIGI",
+    "name": "ICICIGI",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2015-02-10",
+        "type": "buy",
+        "shares": 2500.0,
+        "price": 175.0
+      }
+    ]
+  },
+  {
+    "symbol": "ARE&M",
+    "name": "ARE&M",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-05-01",
+        "type": "buy",
+        "shares": 2500.0,
+        "price": 255.44
+      }
+    ]
+  },
+  {
+    "symbol": "KIRLOSBROS",
+    "name": "KIRLOSBROS",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2010-01-24",
+        "type": "buy",
+        "shares": 1000.0,
+        "price": 165.13
+      }
+    ]
+  },
+  {
+    "symbol": "INDHOTEL",
+    "name": "INDHOTEL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-11",
+        "type": "buy",
+        "shares": 2000.0,
+        "price": 70.48
+      }
+    ]
+  },
+  {
+    "symbol": "TCS",
+    "name": "TCS",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-10",
+        "type": "buy",
+        "shares": 400.0,
+        "price": 734.63
+      }
+    ]
+  },
+  {
+    "symbol": "TATASTEEL",
+    "name": "TATASTEEL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2023-12-01",
+        "type": "buy",
+        "shares": 6700.0,
+        "price": 51.622388
+      }
+    ]
+  },
+  {
+    "symbol": "BHARATFORG",
+    "name": "BHARATFORG",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-06",
+        "type": "buy",
+        "shares": 500.0,
+        "price": 133.82
+      }
+    ]
+  },
+  {
+    "symbol": "0P000134CG",
+    "name": "0P000134CG",
+    "exchange": "bse",
+    "transactions": [
+      {
+        "date": "2021-01-21",
+        "type": "buy",
+        "shares": 5330.224,
+        "price": 18.76
+      }
+    ]
+  },
+  {
+    "symbol": "POWERGRID",
+    "name": "POWERGRID",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2007-10-04",
+        "type": "buy",
+        "shares": 286.0,
+        "price": 52.0
+      },
+      {
+        "date": "2021-07-29",
+        "type": "buy",
+        "shares": 95.0,
+        "price": 0.0
+      },
+      {
+        "date": "2023-09-12",
+        "type": "buy",
+        "shares": 127.0,
+        "price": 0.0
+      }
+    ]
+  },
+  {
+    "symbol": "NTPC",
+    "name": "NTPC",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2004-11-05",
+        "type": "buy",
+        "shares": 256.0,
+        "price": 51.83
+      }
+    ]
+  },
+  {
+    "symbol": "JETAIRWAYS",
+    "name": "JETAIRWAYS",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2005-03-11",
+        "type": "buy",
+        "shares": 300.0,
+        "price": 1050.0
+      }
+    ]
+  },
+  {
+    "symbol": "FRETAIL",
+    "name": "FRETAIL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-07",
+        "type": "buy",
+        "shares": 1000.0,
+        "price": 194.33
+      }
+    ]
+  },
+  {
+    "symbol": "FLFL",
+    "name": "FLFL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-07",
+        "type": "buy",
+        "shares": 333.0,
+        "price": 0.0
+      },
+      {
+        "date": "2026-01-29",
+        "type": "sell",
+        "shares": 333.0,
+        "price": 1.31
+      }
+    ]
+  },
+  {
+    "symbol": "FEL",
+    "name": "FEL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-07",
+        "type": "buy",
+        "shares": 1000.0,
+        "price": 0.01
+      },
+      {
+        "date": "2026-01-29",
+        "type": "sell",
+        "shares": 1000.0,
+        "price": 0.45
+      }
+    ]
+  },
+  {
+    "symbol": "PRAXIS",
+    "name": "PRAXIS",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-07",
+        "type": "buy",
+        "shares": 50.0,
+        "price": 0.0
+      },
+      {
+        "date": "2026-01-29",
+        "type": "sell",
+        "shares": 50.0,
+        "price": 7.22
+      }
+    ]
+  },
+  {
+    "symbol": "TRENT",
+    "name": "TRENT",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-12",
+        "type": "buy",
+        "shares": 2000.0,
+        "price": 102.0
+      },
+      {
+        "date": "2025-02-27",
+        "type": "sell",
+        "shares": 2000.0,
+        "price": 4828.0
+      }
+    ]
+  },
+  {
+    "symbol": "JBCHEPHARM",
+    "name": "JBCHEPHARM",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-01-31",
+        "type": "buy",
+        "shares": 3000.0,
+        "price": 55.615
+      },
+      {
+        "date": "2025-02-27",
+        "type": "sell",
+        "shares": 3000.0,
+        "price": 1540.0
+      }
+    ]
+  },
+  {
+    "symbol": "SPARC",
+    "name": "SPARC",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-01-18",
+        "type": "buy",
+        "shares": 5066.0,
+        "price": 87.4
+      },
+      {
+        "date": "2025-02-14",
+        "type": "sell",
+        "shares": 5066.0,
+        "price": 139.8427
+      }
+    ]
+  },
+  {
+    "symbol": "POONAWALLA",
+    "name": "POONAWALLA",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-08",
+        "type": "buy",
+        "shares": 1500.0,
+        "price": 69.97
+      },
+      {
+        "date": "2025-02-14",
+        "type": "sell",
+        "shares": 1500.0,
+        "price": 292.4086
+      }
+    ]
+  },
+  {
+    "symbol": "IDFCFIRSTB",
+    "name": "IDFCFIRSTB",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2005-08-01",
+        "type": "buy",
+        "shares": 456.0,
+        "price": 0.0
+      },
+      {
+        "date": "2024-10-10",
+        "type": "buy",
+        "shares": 706.0,
+        "price": 21.96034
+      },
+      {
+        "date": "2025-02-14",
+        "type": "sell",
+        "shares": 1162.0,
+        "price": 60.8824
+      }
+    ]
+  },
+  {
+    "symbol": "ABFRL",
+    "name": "ABFRL",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2024-06-11",
+        "type": "buy",
+        "shares": 200.0,
+        "price": 0.01
+      },
+      {
+        "date": "2025-02-14",
+        "type": "sell",
+        "shares": 200.0,
+        "price": 252.7359
+      }
+    ]
+  },
+  {
+    "symbol": "TATASTLLP",
+    "name": "TATASTLLP",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-05-08",
+        "type": "buy",
+        "shares": 1000.0,
+        "price": 345.87
+      },
+      {
+        "date": "2023-11-30",
+        "type": "sell",
+        "shares": 1000.0,
+        "price": 345.87
+      }
+    ]
+  },
+  {
+    "symbol": "IDFC",
+    "name": "IDFC",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2005-08-01",
+        "type": "buy",
+        "shares": 456.0,
+        "price": 34.0
+      },
+      {
+        "date": "2024-10-28",
+        "type": "sell",
+        "shares": 456.0,
+        "price": 34.0
+      }
+    ]
+  }
+]

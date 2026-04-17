@@ -1,0 +1,11 @@
+[
+  {
+    "id": "ca-001",
+    "date": "2023-11-30",
+    "type": "merger",
+    "from_symbol": "TATASTLLP",
+    "to_symbol": "TATASTEEL",
+    "ratio": 6.7,
+    "note": "Tata Steel Long Products amalgamated into Tata Steel Ltd. 1 TATASTLLP \u2192 6.7 TATASTEEL"
+  }
+]

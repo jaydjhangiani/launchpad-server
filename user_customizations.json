@@ -1,0 +1,1308 @@
+{
+  "__page_count__": 8,
+  "Sheet 1": {
+    "added": [],
+    "removed": [],
+    "sector_name": "Brokerages"
+  },
+  "__order__": [
+    "Sheet 1",
+    "Sheet 3",
+    "Sheet2",
+    "Sheet 4",
+    "Sheet 5",
+    "Sheet 6",
+    "Sheet 7",
+    "Sheet 13",
+    "Sheet 12",
+    "Sheet 8",
+    "Sheet 10",
+    "Sheet 18",
+    "Sheet 16",
+    "Sheet 11",
+    "Sheet 15",
+    "Sheet 26",
+    "Sheet 19",
+    "Sheet 23",
+    "Sheet 21",
+    "Sheet 20",
+    "Sheet 22",
+    "Sheet 24",
+    "Sheet 14",
+    "Sheet 25",
+    "Sheet 17",
+    "Sheet 9",
+    "_uc_1773038434921",
+    "_uc_1773038434922",
+    "_uc_1773038434923",
+    "_uc_1773038434924",
+    "_uc_1773038434925",
+    "_uc_1773038434926",
+    "_uc_1773049473082",
+    "_uc_1773049807866",
+    "_uc_1773050409300",
+    "_uc_1773103214326",
+    "_uc_1775137947405",
+    "_uc_1775138084494",
+    "_uc_1775139537856",
+    "_uc_1775139728452",
+    "_uc_1775139796969",
+    "_uc_1775140797044",
+    "_uc_1775141521492",
+    "_uc_1775141939463",
+    "_uc_1775142205669",
+    "_uc_1775169581289",
+    "_uc_1775169684385",
+    "_uc_1775169756490",
+    "_uc_1775171086195",
+    "_uc_1776285777839",
+    "_uc_1776346818338"
+  ],
+  "Sheet 13": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 17": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 9": {
+    "added": [],
+    "removed": [],
+    "sector_name": "Diversified / Conglom."
+  },
+  "Sheet 6": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 5": {
+    "added": [],
+    "removed": [],
+    "sector_name": "NBFc"
+  },
+  "Sheet2": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 3": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 4": {
+    "added": [],
+    "removed": [],
+    "sector_name": "Insurance & Wealth"
+  },
+  "Sheet 14": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 18": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 22": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 23": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 19": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 15": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 16": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 20": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 24": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 25": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 7": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 12": {
+    "added": [],
+    "removed": []
+  },
+  "__pages__": {
+    "Sheet 1": 0,
+    "Sheet 8": 2,
+    "Sheet 11": 3,
+    "Sheet 15": 3,
+    "Sheet 25": 2,
+    "Sheet 18": 7,
+    "Sheet 17": 4,
+    "Sheet 10": 1,
+    "Sheet 13": 5,
+    "Sheet 19": 4,
+    "Sheet 26": 3,
+    "Sheet 7": 4,
+    "_uc_1773038434921": 6,
+    "_uc_1773038434922": 6,
+    "_uc_1773038434923": 6,
+    "_uc_1773038434924": 6,
+    "_uc_1773038434925": 6,
+    "_uc_1773038434926": 6,
+    "_uc_1773049473082": 0,
+    "_uc_1773049807866": 0,
+    "Sheet 12": 5,
+    "Sheet 9": 4,
+    "_uc_1773050409300": 0,
+    "_uc_1773103214326": 6,
+    "Sheet 16": 7,
+    "Sheet 21": 5,
+    "Sheet 23": 5,
+    "Sheet 14": 5,
+    "Sheet 20": 5,
+    "Sheet 24": 5,
+    "Sheet 22": 5,
+    "_uc_1775137947405": 2,
+    "_uc_1775138084494": 2,
+    "_uc_1775139537856": 7,
+    "_uc_1775139728452": 2,
+    "_uc_1775139796969": 2,
+    "_uc_1775140797044": 1,
+    "_uc_1775141521492": 1,
+    "_uc_1775141939463": 1,
+    "_uc_1775142205669": 2,
+    "_uc_1775169581289": 2,
+    "_uc_1775169684385": 7,
+    "_uc_1775169756490": 2,
+    "_uc_1775171086195": 6,
+    "_uc_1776285777839": 2,
+    "_uc_1776346818338": 2
+  },
+  "__heights__": {
+    "Sheet 1": 1,
+    "Sheet 7": 3,
+    "Sheet 24": 1,
+    "Sheet 22": 2,
+    "Sheet 23": 1,
+    "Sheet 20": 2,
+    "Sheet 13": 2,
+    "_uc_1773038434921": 1,
+    "_uc_1773038434922": 1,
+    "_uc_1773038434923": 1,
+    "_uc_1773038434924": 1,
+    "_uc_1773038434925": 1,
+    "_uc_1773038434926": 1,
+    "Sheet 5": 2,
+    "Sheet 8": 2,
+    "Sheet 15": 4,
+    "Sheet 19": 3,
+    "Sheet 18": 4,
+    "Sheet 11": 2,
+    "Sheet 10": 3,
+    "Sheet 26": 4,
+    "Sheet 17": 3,
+    "Sheet 16": 2,
+    "Sheet 4": 2,
+    "Sheet 6": 3,
+    "Sheet2": 2,
+    "_uc_1773049807866": 2,
+    "_uc_1773049473082": 2,
+    "Sheet 25": 1,
+    "_uc_1775137947405": 1,
+    "_uc_1775140797044": 3,
+    "_uc_1775138084494": 1,
+    "_uc_1775169684385": 2
+  },
+  "_uc_1773038434921": {
+    "sector_name": "AMERICAS",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "^DJI",
+        "name": "Dow Jones 30"
+      },
+      {
+        "symbol": "^GSPC",
+        "name": "S&P 500"
+      },
+      {
+        "symbol": "^IXIC",
+        "name": "Nasdaq Composite"
+      },
+      {
+        "symbol": "^RUT",
+        "name": "Russell 2000"
+      },
+      {
+        "symbol": "^VIX",
+        "name": "VIX Volatility"
+      },
+      {
+        "symbol": "DX=F",
+        "name": "US Dollar Index"
+      },
+      {
+        "symbol": "^BVSP",
+        "name": "IBOVESPA (Brazil)"
+      },
+      {
+        "symbol": "^GSPTSE",
+        "name": "S&P/TSX Composite"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773038434922": {
+    "sector_name": "EUROPE INDICES",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "^FTSE",
+        "name": "FTSE 100"
+      },
+      {
+        "symbol": "^GDAXI",
+        "name": "DAX"
+      },
+      {
+        "symbol": "^FCHI",
+        "name": "CAC 40"
+      },
+      {
+        "symbol": "^STOXX50E",
+        "name": "EURO STOXX 50"
+      },
+      {
+        "symbol": "^N100",
+        "name": "Euronext 100"
+      },
+      {
+        "symbol": "^AEX",
+        "name": "AEX (Amsterdam)"
+      },
+      {
+        "symbol": "^IBEX",
+        "name": "IBEX 35 (Spain)"
+      },
+      {
+        "symbol": "^SSMI",
+        "name": "SMI (Switzerland)"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773038434923": {
+    "sector_name": "ASIA INDICES",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "^N225",
+        "name": "Nikkei 225"
+      },
+      {
+        "symbol": "^HSI",
+        "name": "Hang Seng"
+      },
+      {
+        "symbol": "^KS11",
+        "name": "KOSPI (Korea)"
+      },
+      {
+        "symbol": "^BSESN",
+        "name": "BSE Sensex"
+      },
+      {
+        "symbol": "^AXJO",
+        "name": "ASX 200 (Australia)"
+      },
+      {
+        "symbol": "000001.SS",
+        "name": "SSE Composite (China)"
+      },
+      {
+        "symbol": "^STI",
+        "name": "Straits Times (Singapore)"
+      },
+      {
+        "symbol": "^TWII",
+        "name": "TAIEX (Taiwan)"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773038434924": {
+    "sector_name": "COMMODITIES",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "GC=F",
+        "name": "Gold Futures"
+      },
+      {
+        "symbol": "SI=F",
+        "name": "Silver Futures"
+      },
+      {
+        "symbol": "CL=F",
+        "name": "WTI Crude Oil"
+      },
+      {
+        "symbol": "BZ=F",
+        "name": "Brent Crude"
+      },
+      {
+        "symbol": "NG=F",
+        "name": "Natural Gas"
+      },
+      {
+        "symbol": "HG=F",
+        "name": "Copper Futures"
+      },
+      {
+        "symbol": "PL=F",
+        "name": "Platinum"
+      },
+      {
+        "symbol": "PA=F",
+        "name": "Palladium"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773038434925": {
+    "sector_name": "CURRENCIES",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "EURUSD=X",
+        "name": "EUR/USD"
+      },
+      {
+        "symbol": "GBPUSD=X",
+        "name": "GBP/USD"
+      },
+      {
+        "symbol": "USDJPY=X",
+        "name": "USD/JPY"
+      },
+      {
+        "symbol": "USDCAD=X",
+        "name": "USD/CAD"
+      },
+      {
+        "symbol": "AUDUSD=X",
+        "name": "AUD/USD"
+      },
+      {
+        "symbol": "USDMXN=X",
+        "name": "USD/MXN"
+      },
+      {
+        "symbol": "USDCNH=X",
+        "name": "USD/CNH"
+      },
+      {
+        "symbol": "USDINR=X",
+        "name": "USD/INR"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773038434926": {
+    "sector_name": "US BONDS & RATES",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "^TYX",
+        "name": "30-Yr Treasury Yield"
+      },
+      {
+        "symbol": "^TNX",
+        "name": "10-Yr Treasury Yield"
+      },
+      {
+        "symbol": "^FVX",
+        "name": "5-Yr Treasury Yield"
+      },
+      {
+        "symbol": "^IRX",
+        "name": "13-Wk T-Bill Yield"
+      },
+      {
+        "symbol": "ZB=F",
+        "name": "30-Yr Bond Futures"
+      },
+      {
+        "symbol": "ZN=F",
+        "name": "10-Yr Note Futures"
+      },
+      {
+        "symbol": "ZF=F",
+        "name": "5-Yr Note Futures"
+      },
+      {
+        "symbol": "ZT=F",
+        "name": "2-Yr Note Futures"
+      }
+    ],
+    "removed": [],
+    "user_created": true
+  },
+  "_uc_1773049473082": {
+    "user_created": true,
+    "sector_name": "FINTECH",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "PAYTM",
+        "name": "PAYTM"
+      },
+      {
+        "symbol": "PINELABS",
+        "name": "PINELABS"
+      },
+      {
+        "symbol": "CCAVENUE",
+        "name": "CCAVENUE"
+      },
+      {
+        "symbol": "MOBIKWIK",
+        "name": "MOBIKWIK"
+      },
+      {
+        "symbol": "STYL",
+        "name": "STYL"
+      },
+      {
+        "symbol": "SBICARD",
+        "name": "SBICARD"
+      },
+      {
+        "symbol": "FINOPB",
+        "name": "FINOPB"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1773049807866": {
+    "user_created": true,
+    "sector_name": "ASSET MANAGEMENT COS",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "ICICIAMC",
+        "name": "ICICIAMC"
+      },
+      {
+        "symbol": "HDFCAMC",
+        "name": "HDFCAMC"
+      },
+      {
+        "symbol": "ABSLAMC",
+        "name": "ABSLAMC"
+      },
+      {
+        "symbol": "UTIAMC",
+        "name": "UTIAMC"
+      },
+      {
+        "symbol": "CRAMC",
+        "name": "CRAMC"
+      },
+      {
+        "symbol": "SRAMSET",
+        "name": "SRAMSET"
+      },
+      {
+        "symbol": "NAM-INDIA",
+        "name": "NAM-INDIA"
+      }
+    ],
+    "removed": [
+      "531359"
+    ]
+  },
+  "_uc_1773050409300": {
+    "user_created": true,
+    "sector_name": "HOUSING FINANCE",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "REPCOHOME",
+        "name": "REPCOHOME"
+      },
+      {
+        "symbol": "CANFINHOME",
+        "name": "CANFINHOME"
+      },
+      {
+        "symbol": "LICHSGFIN",
+        "name": "LICHSGFIN"
+      },
+      {
+        "symbol": "HUDCO",
+        "name": "HUDCO"
+      },
+      {
+        "symbol": "BAJAJHFL",
+        "name": "BAJAJHFL"
+      },
+      {
+        "symbol": "AADHARHFC",
+        "name": "AADHARHFC"
+      }
+    ],
+    "removed": [
+      "REPCPHOME"
+    ]
+  },
+  "Sheet 8": {
+    "added": [],
+    "removed": []
+  },
+  "_uc_1773103214326": {
+    "user_created": true,
+    "sector_name": "US BANKS",
+    "mode": "global",
+    "added": [
+      {
+        "symbol": "JPM",
+        "name": "JPM"
+      }
+    ],
+    "removed": [
+      "SI=F",
+      "NG=F",
+      "^JPM"
+    ]
+  },
+  "Sheet 10": {
+    "added": [
+      {
+        "symbol": "ZYDUSLIFE",
+        "name": "ZYDUSLIFE"
+      },
+      {
+        "symbol": "JUBLPHARMA",
+        "name": "JUBLPHARMA"
+      },
+      {
+        "symbol": "STAR",
+        "name": "STAR"
+      }
+    ],
+    "removed": [
+      "MERCK",
+      "ORCHIDPHAR",
+      "STERLINBIO",
+      "CADILAHC",
+      "ESSDEE",
+      "JUBILANT",
+      "OPTOCIRCUI",
+      "APOLLOHOSP",
+      "FORTIS",
+      "HCG",
+      "LALPATHLAB",
+      "THYROCARE",
+      "NH"
+    ]
+  },
+  "Sheet 11": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 21": {
+    "added": [],
+    "removed": []
+  },
+  "Sheet 26": {
+    "added": [],
+    "removed": []
+  },
+  "__page_names__": {
+    "6": "intmkts",
+    "2": "consumer",
+    "0": "financials",
+    "4": "TMT",
+    "5": "oilindusbuild",
+    "3": "Auto Textiles",
+    "1": "pharma",
+    "7": "build"
+  },
+  "_uc_1775137947405": {
+    "user_created": true,
+    "sector_name": "REStaurants",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "JUBLFOOD",
+        "name": "JUBLFOOD"
+      },
+      {
+        "symbol": "SAPPHIRE",
+        "name": "SAPPHIRE"
+      },
+      {
+        "symbol": "DEVYANI",
+        "name": "DEVYANI"
+      },
+      {
+        "symbol": "WESTLIFE",
+        "name": "WESTLIFE"
+      },
+      {
+        "symbol": "RBA",
+        "name": "RBA"
+      },
+      {
+        "symbol": "TRAVELFOOD",
+        "name": "TRAVELFOOD"
+      },
+      {
+        "symbol": "UFBL",
+        "name": "UFBL"
+      },
+      {
+        "symbol": "COFFEEDAY",
+        "name": "COFFEEDAY"
+      },
+      {
+        "symbol": "SPECIALITY",
+        "name": "SPECIALITY"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775138084494": {
+    "user_created": true,
+    "sector_name": "RETAIL DELIVERY",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "ETERNAL",
+        "name": "ETERNAL"
+      },
+      {
+        "symbol": "SWIGGY",
+        "name": "SWIGGY"
+      },
+      {
+        "symbol": "DMART",
+        "name": "DMART"
+      },
+      {
+        "symbol": "MEESHO",
+        "name": "MEESHO"
+      },
+      {
+        "symbol": "TRENT",
+        "name": "TRENT"
+      },
+      {
+        "symbol": "URBANCO",
+        "name": "URBANCO"
+      },
+      {
+        "symbol": "FIRSTCRY",
+        "name": "FIRSTCRY"
+      },
+      {
+        "symbol": "PCJEWELLER",
+        "name": "PCJEWELLER"
+      },
+      {
+        "symbol": "NYKAA",
+        "name": "NYKAA"
+      }
+    ],
+    "removed": [
+      "BATAINDIA",
+      "RELAXO",
+      "SHOPERSTOP",
+      "TITAN"
+    ]
+  },
+  "_uc_1775139537856": {
+    "user_created": true,
+    "sector_name": "PAINTS",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "ASIANPAINT",
+        "name": "ASIANPAINT"
+      },
+      {
+        "symbol": "BERGEPAINT",
+        "name": "BERGEPAINT"
+      },
+      {
+        "symbol": "KANSAINER",
+        "name": "KANSAINER"
+      },
+      {
+        "symbol": "AKZOINDIA",
+        "name": "AKZOINDIA"
+      }
+    ],
+    "removed": [
+      "KOKUYOCMLN",
+      "ASTRAL"
+    ]
+  },
+  "_uc_1775139728452": {
+    "user_created": true,
+    "sector_name": "ED",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "KOKUYOCMLN",
+        "name": "KOKUYOCMLN"
+      },
+      {
+        "symbol": "NAVNETEDUL",
+        "name": "NAVNETEDUL"
+      },
+      {
+        "symbol": "APTECHT",
+        "name": "APTECHT"
+      },
+      {
+        "symbol": "LINC",
+        "name": "LINC"
+      },
+      {
+        "symbol": "DOMS",
+        "name": "DOMS"
+      },
+      {
+        "symbol": "FLAIR",
+        "name": "FLAIR"
+      },
+      {
+        "symbol": "TREEHOUSE",
+        "name": "TREEHOUSE"
+      },
+      {
+        "symbol": "ZEELEARN",
+        "name": "ZEELEARN"
+      },
+      {
+        "symbol": "MTEDUCARE",
+        "name": "MTEDUCARE"
+      },
+      {
+        "symbol": "SUNDARAM",
+        "name": "SUNDARAM"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775139796969": {
+    "user_created": true,
+    "sector_name": "SIN",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "UBL",
+        "name": "UBL"
+      },
+      {
+        "symbol": "VSTIND",
+        "name": "VSTIND"
+      },
+      {
+        "symbol": "ITC",
+        "name": "ITC"
+      },
+      {
+        "symbol": "RADICO",
+        "name": "RADICO"
+      },
+      {
+        "symbol": "DELTACORP",
+        "name": "DELTACORP"
+      },
+      {
+        "symbol": "UNITDSPR",
+        "name": "UNITDSPR"
+      },
+      {
+        "symbol": "GODFRYPHLP",
+        "name": "GODFRYPHLP"
+      },
+      {
+        "symbol": "ELITECON",
+        "name": "ELITECON"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775140797044": {
+    "user_created": true,
+    "sector_name": "HOSPITAL DIAGNOSTICS",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "APOLLOHOSP",
+        "name": "APOLLOHOSP"
+      },
+      {
+        "symbol": "FORTIS",
+        "name": "FORTIS"
+      },
+      {
+        "symbol": "HCG",
+        "name": "HCG"
+      },
+      {
+        "symbol": "LALPATHLAB",
+        "name": "LALPATHLAB"
+      },
+      {
+        "symbol": "THYROCARE",
+        "name": "THYROCARE"
+      },
+      {
+        "symbol": "METROPOLIS",
+        "name": "METROPOLIS"
+      },
+      {
+        "symbol": "NH",
+        "name": "NH"
+      },
+      {
+        "symbol": "VIJAYA",
+        "name": "VIJAYA"
+      },
+      {
+        "symbol": "NEPHROPLUS",
+        "name": "NEPHROPLUS"
+      },
+      {
+        "symbol": "KRSNAA",
+        "name": "KRSNAA"
+      },
+      {
+        "symbol": "SURAKSHA",
+        "name": "SURAKSHA"
+      },
+      {
+        "symbol": "MAXHEALTH",
+        "name": "MAXHEALTH"
+      },
+      {
+        "symbol": "ASTERDM",
+        "name": "ASTERDM"
+      },
+      {
+        "symbol": "MEDANTA",
+        "name": "MEDANTA"
+      },
+      {
+        "symbol": "KIMS",
+        "name": "KIMS"
+      },
+      {
+        "symbol": "AGARWALEYE",
+        "name": "AGARWALEYE"
+      },
+      {
+        "symbol": "RAINBOW",
+        "name": "RAINBOW"
+      },
+      {
+        "symbol": "KOVAI",
+        "name": "KOVAI"
+      },
+      {
+        "symbol": "YATHARTH",
+        "name": "YATHARTH"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775141521492": {
+    "user_created": true,
+    "sector_name": "HEALTH INSURANCE",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "STARHEALTH",
+        "name": "STARHEALTH"
+      },
+      {
+        "symbol": "NIVABUPA",
+        "name": "NIVABUPA"
+      },
+      {
+        "symbol": "ICICIGI",
+        "name": "ICICIGI"
+      },
+      {
+        "symbol": "GODIGIT",
+        "name": "GODIGIT"
+      },
+      {
+        "symbol": "NIACL",
+        "name": "NIACL"
+      }
+    ],
+    "removed": [
+      "STAR",
+      "NIVA"
+    ]
+  },
+  "_uc_1775141939463": {
+    "user_created": true,
+    "sector_name": "MNC PHARMA",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "ABBOTINDIA",
+        "name": "ABBOTINDIA"
+      },
+      {
+        "symbol": "GLAXO",
+        "name": "GLAXO"
+      },
+      {
+        "symbol": "PFIZER",
+        "name": "PFIZER"
+      },
+      {
+        "symbol": "ASTRAZEN",
+        "name": "ASTRAZEN"
+      },
+      {
+        "symbol": "NOVARTIND",
+        "name": "NOVARTIND"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775142205669": {
+    "user_created": true,
+    "sector_name": "SUGAR",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "RAJSREESUG",
+        "name": "RAJSREESUG"
+      },
+      {
+        "symbol": "SAKHTISUG",
+        "name": "SAKHTISUG"
+      },
+      {
+        "symbol": "EIDPARRY",
+        "name": "EIDPARRY"
+      },
+      {
+        "symbol": "BALRAMCHIN",
+        "name": "BALRAMCHIN"
+      },
+      {
+        "symbol": "TRIVENI",
+        "name": "TRIVENI"
+      },
+      {
+        "symbol": "DCMSHRIRAM",
+        "name": "DCMSHRIRAM"
+      },
+      {
+        "symbol": "BAJAJHIND",
+        "name": "BAJAJHIND"
+      },
+      {
+        "symbol": "DHAMPURSUG",
+        "name": "DHAMPURSUG"
+      },
+      {
+        "symbol": "SIMBHALS",
+        "name": "SIMBHALS"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1775169581289": {
+    "user_created": true,
+    "sector_name": "RICE fish",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "KOHINOOR",
+        "name": "KOHINOOR"
+      },
+      {
+        "symbol": "KRBL",
+        "name": "KRBL"
+      },
+      {
+        "symbol": "LTFOODS",
+        "name": "LTFOODS"
+      },
+      {
+        "symbol": "APEX",
+        "name": "APEX"
+      },
+      {
+        "symbol": "CCL",
+        "name": "CCL"
+      },
+      {
+        "symbol": "GODREJAGRO",
+        "name": "GODREJAGRO"
+      },
+      {
+        "symbol": "AVANTIFEED",
+        "name": "AVANTIFEED"
+      }
+    ],
+    "removed": [
+      "JAYSREETEA",
+      "MCLEODRUSS"
+    ]
+  },
+  "_uc_1775169684385": {
+    "user_created": true,
+    "sector_name": "CERAMIC",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "MURUDCERA",
+        "name": "MURUDCERA"
+      },
+      {
+        "symbol": "KAJARIACER",
+        "name": "KAJARIACER"
+      },
+      {
+        "symbol": "EIDPARRY",
+        "name": "EIDPARRY"
+      },
+      {
+        "symbol": "SUPREMEIND",
+        "name": "SUPREMEIND"
+      },
+      {
+        "symbol": "CENTURYPLY",
+        "name": "CENTURYPLY"
+      },
+      {
+        "symbol": "TIMETECHNO",
+        "name": "TIMETECHNO"
+      },
+      {
+        "symbol": "NILKAMAL",
+        "name": "NILKAMAL"
+      },
+      {
+        "symbol": "SOMANYCERA",
+        "name": "SOMANYCERA"
+      },
+      {
+        "symbol": "ASTRAL",
+        "name": "ASTRAL"
+      }
+    ],
+    "removed": [
+      "SOMANYCER"
+    ]
+  },
+  "_uc_1775169756490": {
+    "user_created": true,
+    "sector_name": "tea",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "CCL",
+        "name": "CCL"
+      },
+      {
+        "symbol": "HATSUN",
+        "name": "HATSUN"
+      },
+      {
+        "symbol": "DODLA",
+        "name": "DODLA"
+      },
+      {
+        "symbol": "PARAGMILK",
+        "name": "PARAGMILK"
+      },
+      {
+        "symbol": "HERITGFOOD",
+        "name": "HERITGFOOD"
+      },
+      {
+        "symbol": "RENUKA",
+        "name": "RENUKA"
+      },
+      {
+        "symbol": "HARRMALAYA",
+        "name": "HARRMALAYA"
+      },
+      {
+        "symbol": "JAYSREETEA",
+        "name": "JAYSREETEA"
+      },
+      {
+        "symbol": "MCLEODRUSS",
+        "name": "MCLEODRUSS"
+      }
+    ],
+    "removed": [
+      "HERITAGE",
+      "PARAG"
+    ]
+  },
+  "_uc_1775171086195": {
+    "user_created": true,
+    "sector_name": "BUILD",
+    "mode": "nse",
+    "added": [],
+    "removed": []
+  },
+  "_uc_1776285777839": {
+    "user_created": true,
+    "sector_name": "CONSUMER DURABLES",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "TTKPRESTIG",
+        "name": "TTKPRESTIG"
+      },
+      {
+        "symbol": "DIXON",
+        "name": "DIXON"
+      },
+      {
+        "symbol": "CASTROLIND",
+        "name": "CASTROLIND"
+      },
+      {
+        "symbol": "CROMPTON",
+        "name": "CROMPTON"
+      },
+      {
+        "symbol": "WHIRLPOOL",
+        "name": "WHIRLPOOL"
+      },
+      {
+        "symbol": "VIPIND",
+        "name": "VIPIND"
+      },
+      {
+        "symbol": "GULFOILLUB",
+        "name": "GULFOILLUB"
+      },
+      {
+        "symbol": "RAJESHEXPO",
+        "name": "RAJESHEXPO"
+      },
+      {
+        "symbol": "IFBIND",
+        "name": "IFBIND"
+      },
+      {
+        "symbol": "EVEREADY",
+        "name": "EVEREADY"
+      },
+      {
+        "symbol": "BUTTERFLY",
+        "name": "BUTTERFLY"
+      },
+      {
+        "symbol": "IFBAGRO",
+        "name": "IFBAGRO"
+      },
+      {
+        "symbol": "MIRZAINT",
+        "name": "MIRZAINT"
+      },
+      {
+        "symbol": "BATAINDIA",
+        "name": "BATAINDIA"
+      },
+      {
+        "symbol": "RELAXO",
+        "name": "RELAXO"
+      },
+      {
+        "symbol": "HAWKINCOOK",
+        "name": "HAWKINCOOK"
+      },
+      {
+        "symbol": "SALORAINTL",
+        "name": "SALORAINTL"
+      },
+      {
+        "symbol": "CARTRADE",
+        "name": "CARTRADE"
+      },
+      {
+        "symbol": "3MINDIA",
+        "name": "3MINDIA"
+      }
+    ],
+    "removed": []
+  },
+  "_uc_1776346818338": {
+    "user_created": true,
+    "sector_name": "JEWELLERY",
+    "mode": "nse",
+    "added": [
+      {
+        "symbol": "SHOPERSTOP",
+        "name": "SHOPERSTOP"
+      },
+      {
+        "symbol": "TITAN",
+        "name": "TITAN"
+      },
+      {
+        "symbol": "TBZ",
+        "name": "TBZ"
+      },
+      {
+        "symbol": "KALYANKJIL",
+        "name": "KALYANKJIL"
+      },
+      {
+        "symbol": "THANGAMAYL",
+        "name": "THANGAMAYL"
+      },
+      {
+        "symbol": "PNGJL",
+        "name": "PNGJL"
+      },
+      {
+        "symbol": "BLUESTONE",
+        "name": "BLUESTONE"
+      },
+      {
+        "symbol": "SKYGOLD",
+        "name": "SKYGOLD"
+      }
+    ],
+    "removed": [
+      "PCJEWELLER"
+    ]
+  }
+}

@@ -1,0 +1,1634 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Ruliad Capital Management Systems – Indian Markets</title>
+  <style>
+    /* ── RESET & ROOT VARIABLES ─────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:            #000000;
+      --panel-bg:      #060606;
+      --panel-border:  #1c1c1c;
+      --panel-accent:  #ff8c00;      /* Bloomberg orange */
+      --title-bg:      #0d0800;
+      --title-text:    #ff9900;
+      --hdr-bg:        #000d1a;
+      --col-hdr:       #555;
+      --sym:           #ffe600;      /* bright yellow – identifier colour */
+      --price:         #ffffff;
+      --up:            #00e676;      /* green */
+      --down:          #ff1744;      /* red */
+      --flat:          #cccccc;
+      --dim:           #3a3a3a;
+      --vol:           #7a7a7a;
+      --footer-bg:     #000810;
+      --font:          'Consolas', 'Courier New', monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: var(--font);
+      font-size: 11px;
+      color: var(--flat);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP HEADER BAR ─────────────────────────────────── */
+    #header {
+      flex-shrink: 0;
+      height: 38px;
+      background: var(--hdr-bg);
+      border-bottom: 1px solid #0044aa;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .logo {
+      color: var(--panel-accent);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      white-space: nowrap;
+      padding-right: 16px;
+      border-right: 1px solid #1a3a5a;
+    }
+
+    #indices {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .idx-chip {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 0 14px;
+      border-right: 1px solid #0a1e35;
+    }
+    .idx-name  { color: #666; font-size: 9px; white-space: nowrap; }
+    .idx-price { color: #fff; font-size: 13px; font-weight: bold; }
+    .idx-chg   { font-size: 10px; }
+
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-left: 14px;
+      border-left: 1px solid #0a1e35;
+      flex-shrink: 0;
+    }
+
+    #market-badge {
+      font-size: 9px;
+      padding: 1px 7px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+    .open   { background: #003318; color: #00ff88; border: 1px solid #00cc66; }
+    .closed { background: #330000; color: #ff4444; border: 1px solid #cc0000; }
+
+    #clock { color: var(--panel-accent); font-size: 12px; white-space: nowrap; }
+    #data-age          { color: #555; font-size: 9px; white-space: nowrap; }
+    #data-age.stale    { color: #cc8800; }
+    #data-age.very-stale { color: #cc3300; font-weight: bold; }
+
+    #btn-refresh {
+      cursor: pointer;
+      background: #0a1e35;
+      color: #4488dd;
+      border: 1px solid #2255aa;
+      padding: 2px 8px;
+      font-family: var(--font);
+      font-size: 9px;
+      border-radius: 2px;
+    }
+    #btn-refresh:hover { background: #112844; color: #66aaff; }
+
+    /* ── PAGE NAV BAR ─────────────────────────────────────── */
+    #page-nav {
+      flex-shrink: 0;
+      height: 26px;
+      background: #000810;
+      border-bottom: 1px solid #0a1e35;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 4px;
+    }
+    .page-btn {
+      cursor: pointer;
+      background: #0a1020;
+      color: #446688;
+      border: 1px solid #1a2a40;
+      padding: 2px 10px;
+      font-family: var(--font);
+      font-size: 9px;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+    .page-btn:hover  { background: #112233; color: #88bbdd; }
+    .page-btn.active { background: #001830; color: var(--panel-accent); border-color: var(--panel-accent); }
+    .page-btn-wrap { display: flex; align-items: center; gap: 1px; position: relative; }
+    .page-btn-wrap.pg-drag-over > .page-btn { border-color: var(--panel-accent) !important; color: var(--panel-accent) !important; }
+    .page-btn-del {
+      cursor: pointer; background: transparent; color: #3a2020;
+      border: 1px solid #2a1515; padding: 2px 5px;
+      font-family: var(--font); font-size: 8px; border-radius: 0 2px 2px 0;
+      margin-left: -1px; white-space: nowrap;
+    }
+    .page-btn-del:hover { background: #1a0000; color: #cc3333; border-color: #aa2222; }
+    .page-label { color: #334455; font-size: 9px; margin-left: 8px; }
+    .page-rename-input {
+      font-family: var(--font); font-size: 9px; background: #001020;
+      color: var(--panel-accent); border: 1px solid var(--panel-accent);
+      padding: 1px 5px; border-radius: 2px; width: 90px; outline: none;
+    }
+    /* new-sector inline form inside page-nav */
+    #new-sector-form {
+      display: flex; align-items: center; gap: 4px;
+      overflow: hidden; max-width: 0; opacity: 0;
+      transition: max-width .2s ease, opacity .15s ease;
+    }
+    #new-sector-form.open { max-width: 280px; opacity: 1; }
+    #new-sector-input {
+      background: #0a0a0a; color: var(--title-text);
+      border: 1px solid var(--panel-accent); font-family: var(--font);
+      font-size: 9px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; padding: 2px 6px; width: 160px; outline: none;
+    }
+    #new-sector-input::placeholder { color: #3a2000; font-weight: normal; text-transform: none; letter-spacing: 0; }
+    .btn-new-sector {
+      cursor: pointer; background: #0a1a00; color: #44aa44;
+      border: 1px solid #1a4400; padding: 2px 8px;
+      font-family: var(--font); font-size: 9px; border-radius: 2px; white-space: nowrap;
+      margin-left: auto;
+    }
+    .btn-new-sector:hover { background: #132800; color: #66cc66; border-color: #44aa44; }
+    .btn-ns-ok {
+      cursor: pointer; background: #0a2000; color: var(--up);
+      border: 1px solid #1a4400; padding: 2px 7px;
+      font-family: var(--font); font-size: 8px; border-radius: 1px; white-space: nowrap;
+    }
+    .btn-ns-ok:hover { background: #132800; }
+    .btn-ns-cancel {
+      cursor: pointer; background: transparent; color: #444;
+      border: 1px solid #222; padding: 2px 5px;
+      font-family: var(--font); font-size: 9px; border-radius: 1px;
+    }
+    .btn-ns-cancel:hover { color: var(--down); border-color: var(--down); }
+
+    /* ── 4×3 PANEL GRID ─────────────────────────────────── */
+    #grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 2px;
+      background: #000;
+      padding: 2px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── WIDGET SHELL ─────────────────────────────────────── */
+    .widget {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-top: 2px solid var(--panel-accent);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    /* ── WIDGET HEADER ───────────────────────────────────── */
+    .widget-header {
+      background: var(--title-bg);
+      padding: 3px 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #1a1a1a; flex-shrink: 0; gap: 4px;
+    }
+    .widget-title {
+      color: var(--title-text); font-size: 9px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+      cursor: pointer;
+    }
+    .widget-title:hover { color: #ffbb44; }
+    /* inline rename input */
+    .rename-input {
+      background: #1a0800; color: var(--title-text);
+      border: 1px solid var(--panel-accent); font-family: var(--font);
+      font-size: 9px; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; padding: 1px 4px; flex: 1; min-width: 0;
+      outline: none;
+    }
+    .widget-ctrl  { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .sum-up   { color: var(--up);      font-size: 8px; white-space: nowrap; }
+    .sum-down { color: var(--down);    font-size: 8px; white-space: nowrap; }
+    .sum-flat { color: var(--col-hdr); font-size: 8px; white-space: nowrap; }
+
+    /* ── + ADD BUTTON ───────────────────────────────────── */
+    .btn-add {
+      cursor: pointer; background: #1a0a00; color: var(--panel-accent);
+      border: 1px solid #3a1a00; padding: 1px 6px;
+      font-family: var(--font); font-size: 8px; border-radius: 2px;
+      white-space: nowrap; transition: background .1s, border-color .1s;
+    }
+    .btn-add:hover  { background: #2a1200; border-color: var(--panel-accent); color: #ffbb44; }
+    .btn-add.active { background: #220500; color: #ff5500; border-color: #ff5500; }
+
+    /* ── WIDGET OPTIONS MENU BUTTON ─────────────────────── */
+    .btn-widget-menu {
+      cursor: pointer; background: transparent; border: 1px solid transparent;
+      color: #3a5a6a; padding: 0px 5px; font-family: var(--font); font-size: 12px;
+      border-radius: 2px; white-space: nowrap; line-height: 1; flex-shrink: 0;
+    }
+    .btn-widget-menu:hover { color: #88bbcc; border-color: #1a3a55; background: #050f18; }
+    /* ── WIDGET DROPDOWN POPUP ─────────────────────────── */
+    .widget-menu-popup {
+      position: fixed; z-index: 6000; background: #06111a;
+      border: 1px solid #1a3a55; box-shadow: 0 4px 20px rgba(0,0,0,.92);
+      border-radius: 2px; min-width: 148px; padding: 3px 0;
+    }
+    .wmenu-item {
+      display: block; width: 100%; text-align: left; background: transparent;
+      border: none; cursor: pointer; color: #8899aa;
+      font-family: var(--font); font-size: 9px; padding: 5px 13px; white-space: nowrap;
+    }
+    .wmenu-item:hover:not(:disabled) { background: #0a1e35; color: #ccddee; }
+    .wmenu-item:disabled { opacity: 0.28; cursor: default; }
+    .wmenu-item.wmenu-danger { color: #664444; }
+    .wmenu-item.wmenu-danger:hover { background: #1a0808; color: #cc5555; }
+    .wmenu-sep { border-top: 1px solid #1a2a3a; margin: 2px 0; }
+    .wmenu-label { padding: 4px 13px 1px; font-family: var(--font); font-size: 7px;
+      color: #2a4050; letter-spacing: 1px; pointer-events: none; }
+
+    /* ── GLOBAL PANEL (indices, futures, commodities) ─────── */
+    .widget.global-panel { border-top-color: #0066cc; }
+    .widget.global-panel .widget-header { background: #00060f; }
+    .widget.global-panel .widget-title  { color: #55aadd; }
+    .badge-global {
+      font-size: 7px; color: #3377aa; border: 1px solid #1a3a55;
+      background: #000810; padding: 0px 3px; border-radius: 1px;
+      white-space: nowrap; flex-shrink: 0; letter-spacing: 0.5px;
+    }
+    /* Mode toggle in new-sector form */
+    .btn-mode-toggle { cursor: pointer; border: 1px solid #1a3a1a; padding: 2px 7px;
+      font-family: var(--font); font-size: 9px; border-radius: 2px; white-space: nowrap;
+      background: #0a1a0a; color: #33aa33; }
+    .btn-mode-toggle.bse    { background: #100500; color: #cc7700; border-color: #553300; }
+    .btn-mode-toggle.global { background: #000810; color: #3399cc; border-color: #1a3a55; }
+    /* Global presets quick-pick row inside add-form */
+    .add-form-global.open { max-height: 54px; }
+    .gpre-row { display: flex; flex-wrap: wrap; gap: 2px; width: 100%; padding-top: 2px; }
+    .gpre-chip { cursor: pointer; color: #224466; border: 1px solid #1a3050; background: #00060f;
+      padding: 1px 4px; font-size: 7px; border-radius: 2px; white-space: nowrap; flex-shrink: 0; }
+    .gpre-chip:hover { color: #55aadd; border-color: #336688; background: #000d1a; }
+
+    .move-popup {
+      position: fixed; z-index: 5000;
+      background: #06111a; border: 1px solid var(--panel-accent);
+      box-shadow: 0 4px 20px rgba(0,0,0,.9);
+      min-width: 130px; padding: 3px 0; border-radius: 2px;
+    }
+    .move-popup-item {
+      display: block; width: 100%; text-align: left;
+      background: transparent; border: none; cursor: pointer;
+      color: #8899aa; font-family: var(--font); font-size: 9px;
+      padding: 5px 12px; white-space: nowrap;
+    }
+    .move-popup-item:hover { background: #0a1e35; color: var(--panel-accent); }
+    .move-popup-sep { border-top: 1px solid #1a2a3a; margin: 3px 0; }
+
+    /* ── STOCK ROW RIGHT-CLICK CONTEXT MENU ────────────── */
+    #ctx-menu { position: fixed; z-index: 9000; background: #06111a;
+      border: 1px solid #1a3a55; box-shadow: 0 4px 20px rgba(0,0,0,.92);
+      border-radius: 2px; min-width: 160px; padding: 3px 0; display: none; }
+    .ctx-item { padding: 5px 14px; font-family: var(--font); font-size: 9px;
+      color: #8899aa; cursor: pointer; white-space: nowrap; letter-spacing: 0.4px; }
+    .ctx-item:hover { background: #0d1e2a; color: #ccddee; }
+    .ctx-label { padding: 3px 14px 2px; font-family: var(--font); font-size: 8px;
+      color: #2a4a5a; letter-spacing: 1px; pointer-events: none; }
+    .ctx-sep   { border-top: 1px solid #1a2a3a; margin: 2px 0; }
+
+    /* ── ADD FORM (collapsible) ─────────────────────────── */
+    .add-form {
+      display: flex; align-items: center; gap: 4px;
+      padding: 0 6px; background: #050505;
+      border-bottom: 1px solid var(--panel-accent);
+      flex-shrink: 0; overflow: hidden;
+      max-height: 0; opacity: 0;
+      transition: max-height .18s ease, opacity .15s ease, padding .18s ease;
+    }
+    .add-form.open { max-height: 26px; opacity: 1; padding: 3px 6px; }
+    .add-input {
+      flex: 1; min-width: 0; background: #0a0a0a; color: var(--sym);
+      border: 1px solid #2a2a2a; font-family: var(--font); font-size: 9px;
+      padding: 1px 5px; outline: none; border-radius: 1px;
+    }
+    .add-input:focus        { border-color: var(--panel-accent); }
+    .add-input::placeholder { color: #333; }
+    .btn-add-ok {
+      cursor: pointer; background: #0a2000; color: var(--up);
+      border: 1px solid #1a4400; padding: 1px 7px;
+      font-family: var(--font); font-size: 8px; border-radius: 1px; white-space: nowrap;
+    }
+    .btn-add-ok:hover    { background: #132800; }
+    .btn-add-ok:disabled { opacity: .5; cursor: wait; }
+    .btn-cancel {
+      cursor: pointer; background: transparent; color: #444;
+      border: 1px solid #222; padding: 1px 5px;
+      font-family: var(--font); font-size: 9px; border-radius: 1px;
+    }
+    .btn-cancel:hover { color: var(--down); border-color: var(--down); }
+    .add-err {
+      color: var(--down); font-size: 8px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+      opacity: 0; transition: opacity .2s;
+    }
+    .add-err.show { opacity: 1; }
+
+    /* ── SHARED COLUMN HEADER STRIP ───────────────────────── */
+    #shared-col-hdr {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      background: #000;
+      padding: 0 2px;
+      border-bottom: 1px solid #131313;
+    }
+    .shared-hdr-cell {
+      display: grid;
+      grid-template-columns: 2fr 1.8fr 1.5fr 1.1fr 1.4fr;
+      padding: 2px 4px;
+      background: #070707;
+      border-top: 1px solid #131313;
+    }
+    /* ── COLUMN HEADERS (sortable) ──────────────────────── */
+    .col-hdr-row {
+      display: grid;
+      grid-template-columns: 2fr 1.8fr 1.5fr 1.1fr 1.4fr;
+      padding: 2px 4px; background: #090909;
+      border-bottom: 1px solid #1a1a1a; flex-shrink: 0;
+    }
+    .col-hdr {
+      color: var(--col-hdr); font-size: 8px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 2px; white-space: nowrap;
+    }
+    .col-hdr.sortable          { cursor: pointer; user-select: none; }
+    .col-hdr.sortable:hover    { color: #888; }
+    .col-hdr + .col-hdr        { justify-content: flex-end; }
+    .sort-icon                 { color: #2a2a2a; font-size: 9px; }
+    .sort-icon.active          { color: var(--panel-accent); }
+
+    /* ── WIDGET BODY ────────────────────────────────────── */
+    .widget-body { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+    .widget-body::-webkit-scrollbar       { width: 3px; }
+    .widget-body::-webkit-scrollbar-track { background: transparent; }
+    .widget-body::-webkit-scrollbar-thumb { background: #1e1e1e; }
+
+    /* ── STOCK ROW ──────────────────────────────────────── */
+    .stock-row {
+      display: grid;
+      grid-template-columns: 2fr 1.8fr 1.5fr 1.1fr 1.4fr;
+      padding: 1px 4px; border-bottom: 1px solid #0e0e0e;
+      align-items: center; transition: background .12s;
+    }
+    .stock-row:hover { background: #111; }
+
+    /* sym cell: relative so rm-btn/ed-btn can overlay */
+    .cell-sym {
+      position: relative; color: var(--sym); font-weight: bold; font-size: 10px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 26px;
+    }
+    /* × remove button – hidden until row is hovered */
+    .rm-btn {
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      color: var(--down); font-size: 10px; cursor: pointer;
+      opacity: 0; transition: opacity .1s; line-height: 1; padding: 0 2px;
+    }
+    .stock-row:hover .rm-btn  { opacity: 1; }
+    .rm-btn:hover              { color: #ff5555; }
+
+    /* ✎ edit button – shows on hover, to the right of × */
+    .ed-btn {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: #888; font-size: 9px; cursor: pointer; line-height: 1;
+      opacity: 0; transition: opacity .1s; padding: 0 2px; user-select: none;
+    }
+    .stock-row:hover .ed-btn { opacity: 1; }
+    .ed-btn:hover            { color: #ffaa33; }
+
+    /* inline edit overlay that replaces the sym cell text */
+    .sym-edit-wrap {
+      display: none; position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+      align-items: center; background: #0d0d0d; z-index: 10; padding: 0 2px;
+    }
+    .sym-edit-wrap.open { display: flex; }
+    .sym-edit-inp {
+      flex: 1; min-width: 0; background: #1a1a1a; border: 1px solid #ffaa33;
+      color: #ffaa33; font-size: 10px; font-weight: bold; padding: 1px 4px;
+      border-radius: 2px; outline: none; text-transform: uppercase;
+    }
+    .sym-edit-ok  { color: #00e676; font-size: 10px; cursor: pointer; padding: 0 3px; flex-shrink:0; }
+    .sym-edit-cl  { color: #888;    font-size: 10px; cursor: pointer; padding: 0 2px; flex-shrink:0; }
+
+    .cell-price { color: var(--price); text-align: right; font-size: 10px; }
+    .cell-chg   { text-align: right; font-size: 10px; font-weight: bold; }
+    .cell-vol   { color: var(--vol);  text-align: right; font-size: 9px; }
+    .cell-mcap  { color: #6699cc;    text-align: right; font-size: 9px; }
+    .up   { color: var(--up);   }
+    .down { color: var(--down); }
+    .flat { color: var(--flat); }
+    .na   { color: var(--dim);  }
+
+    @keyframes fUp   { 0%{ background: rgba(0,230,118,.22); } 100%{ background: transparent; } }
+    @keyframes fDown { 0%{ background: rgba(255,23, 68,.22); } 100%{ background: transparent; } }
+    .flash-up   { animation: fUp   1s ease-out forwards; }
+    .flash-down { animation: fDown 1s ease-out forwards; }
+
+    /* ── DRAG-AND-DROP ─────────────────────────────────── */
+    .widget                { cursor: default; }
+    .widget-header         { cursor: grab; user-select: none; }
+    .widget.is-dragging    { opacity: 0.35; border-color: var(--panel-accent) !important; cursor: grabbing; }
+    .widget.drag-over      { border: 2px dashed var(--panel-accent); background: #0e0900;
+                             box-shadow: inset 0 0 12px rgba(255,140,0,.12); }
+    .drag-handle           { color: #2a2a2a; font-size: 11px; cursor: grab; padding: 0 5px 0 0;
+                             flex-shrink: 0; user-select: none; line-height: 1; }
+    .drag-handle:hover     { color: #666; }
+    .widget.is-dragging .drag-handle { cursor: grabbing; }
+    /* stock-row symbol drag */
+    .stock-row.sym-dragging  { opacity: .35; }
+    .widget.sym-drop-target  { border: 2px dashed #44aaff !important;
+                               box-shadow: inset 0 0 12px rgba(68,170,255,.15); }
+    /* page-nav becomes a cross-page drop zone while dragging */
+    #page-nav.drag-active .page-btn { border-color: #1a3050; color: #5588aa; }
+    #page-nav.drag-active .page-btn.active { border-color: #995500; color: #cc7700; }
+    .page-btn.drop-target  { background: #001830 !important; border-color: var(--panel-accent) !important;
+                             color: var(--panel-accent) !important;
+                             box-shadow: 0 0 10px rgba(255,140,0,.35); }
+    #page-nav.drag-active::after { content: '← DROP ON PAGE TO MOVE WIDGET THERE';
+                             color: #334455; font-size: 8px; margin-left: 10px; white-space: nowrap; }
+
+    /* ── SKELETON ────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg,#0d0d0d 25%,#181818 50%,#0d0d0d 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+      height: 12px; border-radius: 2px; margin: 2px 4px; grid-column: 1/-1;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    #footer {
+      flex-shrink: 0; height: 22px; background: var(--footer-bg);
+      border-top: 1px solid #0a1e35;
+      display: flex; align-items: center; padding: 0 8px; gap: 10px; overflow: hidden;
+    }
+
+    .footer-label {
+      color: var(--panel-accent);
+      font-size: 9px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #ticker-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+    }
+
+    #ticker-inner {
+      white-space: nowrap;
+      display: inline-block;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      animation: tickerScroll 180s linear infinite;
+    }
+
+    @keyframes tickerScroll {
+      0%   { left:  100%; }
+      100% { left: -5000px; }
+    }
+
+    .ti { display: inline-block; margin-right: 28px; font-size: 9px; }
+    .tsep { color: #222; margin-right: 28px; }
+
+    #footer-date { color: #444; font-size: 9px; white-space: nowrap; flex-shrink: 0; }
+
+    /* (summary counts folded into .widget-ctrl in header) */
+  </style>
+</head>
+<body>
+
+<!-- =========================================================
+     TOP HEADER
+========================================================== -->
+<div id="header">
+  <div class="logo">▊ RULIAD CAPITAL MANAGEMENT SYSTEMS</div>
+
+  <div id="indices">
+    <!-- JS fills: NIFTY 50, SENSEX, BANK NIFTY chips -->
+    <div class="idx-chip">
+      <span class="idx-name">NIFTY 50</span>
+      <span class="idx-price" id="idx-NIFTY50">--</span>
+      <span class="idx-chg na" id="idx-chg-NIFTY50">--</span>
+    </div>
+    <div class="idx-chip">
+      <span class="idx-name">SENSEX</span>
+      <span class="idx-price" id="idx-SENSEX">--</span>
+      <span class="idx-chg na" id="idx-chg-SENSEX">--</span>
+    </div>
+    <div class="idx-chip">
+      <span class="idx-name">BANK NIFTY</span>
+      <span class="idx-price" id="idx-BANKNIFTY">--</span>
+      <span class="idx-chg na" id="idx-chg-BANKNIFTY">--</span>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <button id="btn-refresh" onclick="forceRefresh()">⟳ REFRESH</button>
+    <span id="data-age">DATA: -- OLD</span>
+    <span id="market-badge" class="closed">● CLOSED</span>
+    <span id="clock">--:--:--</span>
+  </div>
+</div>
+
+<!-- =========================================================
+     PAGE NAV
+========================================================== -->
+<!-- =========================================================
+     PAGE NAV
+========================================================== -->
+<div id="page-nav">
+  <button class="page-btn active" id="pbtn-0" onclick="gotoPage(0)">PAGE 1</button>
+  <button class="page-btn"        id="pbtn-1" onclick="gotoPage(1)">PAGE 2</button>
+  <button class="page-btn"        id="pbtn-2" onclick="gotoPage(2)">PAGE 3</button>
+  <span class="page-label" id="page-label">SECTORS 1–9</span>
+  <!-- New sector inline form -->
+  <span id="new-sector-form">
+    <input type="text" id="new-sector-input" placeholder="Sector name e.g. Defence"
+           oninput="this.value=this.value.toUpperCase()"
+           onkeydown="if(event.key==='Enter')createSector();if(event.key==='Escape')toggleNewSector(false)" />
+    <button id="btn-mode-toggle" class="btn-mode-toggle" onclick="toggleNewSectorMode()" title="Toggle NSE / Global mode">NSE</button>
+    <button class="btn-ns-ok" onclick="createSector()">CREATE</button>
+    <button class="btn-ns-cancel" onclick="toggleNewSector(false)">✕</button>
+  </span>
+  <button class="btn-new-sector" id="btn-add-page" onclick="addPage()" style="color:#3a7799;border-color:#1a3a55;background:#050f18;margin-left:4px">+ ADD PAGE</button>
+  <button class="btn-new-sector" id="btn-new-sector" onclick="toggleNewSector()">+ NEW SECTOR</button>
+</div>
+
+<!-- =========================================================
+     SHARED COLUMN HEADER STRIP (SYM / LAST / CHG% / VOL / MCAP × 4 cols)
+========================================================== -->
+<div id="shared-col-hdr"></div>
+
+<!-- =========================================================
+     4×3 PANEL GRID
+========================================================== -->
+<div id="grid"></div>
+
+<!-- =========================================================
+     FOOTER TICKER TAPE
+========================================================== -->
+<div id="footer">
+  <span class="footer-label">◉ NSE LIVE (15-MIN DELAY)</span>
+  <div id="ticker-wrap">
+    <span id="ticker-inner">Fetching prices…</span>
+  </div>
+  <span id="footer-date">–– ––– ––––</span>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================== -->
+<script>
+"use strict";
+
+// ── CONFIG ───────────────────────────────────────────────────
+const POLL_MS    = 5000;
+const PAGE_SIZE  = 12;   // 4 cols × 3 rows per page
+
+// ── STATE ────────────────────────────────────────────────────
+let prevPrices  = {};
+let initialized = false;
+let panelData   = [];
+let currentPage = 0;
+let totalPages  = 1;   // driven by API page_count (supports empty pages)
+let pageNames   = {};  // page index (string) → custom name
+let _pgClickTimer = null;  // for single vs double click on page tabs
+let _pgClickPg    = -1;
+const panelSort = (()=>{
+  // Load persisted sort from localStorage
+  try { return JSON.parse(localStorage.getItem('panelSort')||'{}'); } catch(e){ return {}; }
+})();
+function _saveSort(){
+  try { localStorage.setItem('panelSort', JSON.stringify(panelSort)); } catch(e){}
+}
+let dragSrcPi   = null; // drag-and-drop source panel index
+// portfolio is now a separate window at /portfolio
+let _ctxPi = null, _ctxSym = null; // right-click context state
+let newSectorMode = 'nse';  // 'nse', 'bse', or 'global' for new sector creation dialog
+
+// ── ESCAPE HELPERS ───────────────────────────────────────────
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escId(s)  { return String(s).replace(/[^A-Za-z0-9_-]/g,'_'); }
+
+// ── FORMATTERS ──────────────────────────────────────────────
+const fmt      = (n,d=2) => (n==null||isNaN(n))?'--':Number(n).toFixed(d);
+const fmtPrice = n => (n==null)?'--':Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtVol   = v => { if(!v&&v!==0)return'--'; if(v>=1e7)return(v/1e7).toFixed(1)+'Cr'; if(v>=1e5)return(v/1e5).toFixed(1)+'L'; if(v>=1e3)return(v/1e3).toFixed(0)+'K'; return''+v; };
+const fmtMktCap= v => { if(!v&&v!==0)return'--'; const cr=v/1e7; if(cr>=1e5)return(cr/1e5).toFixed(1)+'L'; if(cr>=1000)return Math.round(cr/1000)+'kCr'; return Math.round(cr)+'Cr'; };
+const sign     = n => n>0?'+':'';
+const chgClass = p => (p==null)?'na':p>0?'up':p<0?'down':'flat';
+
+// ── CLOCK + MARKET STATUS ────────────────────────────────────
+function isMarketOpen(){
+  // Pure UTC math — independent of browser timezone setting
+  const ist=new Date(Date.now()+330*60000);   // UTC+5:30
+  const dow=ist.getUTCDay(); if(dow===0||dow===6)return false;
+  const m=ist.getUTCHours()*60+ist.getUTCMinutes(); return m>=555&&m<=930;
+}
+(function clockLoop(){
+  const el=document.getElementById('clock'), badge=document.getElementById('market-badge'), now=new Date(), p=n=>String(n).padStart(2,'0');
+  if(el) el.textContent=`${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  if(badge){ badge.textContent=isMarketOpen()?'● OPEN':'● CLOSED'; badge.className=isMarketOpen()?'open':'closed'; }
+  setTimeout(clockLoop,1000);
+})();
+
+// ── PAGE HELPERS ─────────────────────────────────────────────
+// Returns {panel, pi}[] for panels on currentPage, in array order
+function currentPagePanels(){
+  return panelData.map((p,i)=>({panel:p,pi:i})).filter(({panel})=>(panel.page||0)===currentPage);
+}
+function totalPageCount(){
+  const maxPg=panelData.reduce((m,p)=>Math.max(m,(p.page||0)+1),0)||1;
+  return Math.max(maxPg, totalPages);
+}
+
+// ── SORT LOGIC ───────────────────────────────────────────────
+// colGroup = 0-3 (visual column in 4-col grid)
+// Clicking a shared header sort icon sorts ALL rows in that column.
+const GRID_COLS = 4;
+const SORT_COLS  = ['symbol','price','change_pct','volume','market_cap'];
+const SORT_LBLS  = ['SYM','LAST','CHG%','VOL','MCAP'];
+
+// Simulate CSS grid auto-placement (row flow, GRID_COLS columns) accounting for row spans.
+// Returns an array of visual column indices, one per cpp slot.
+function computeVisualCols(cpp){
+  const occupied={};
+  function isFree(row,col,span){
+    for(let r=row;r<row+span;r++) if(occupied[r*GRID_COLS+col]) return false;
+    return true;
+  }
+  function mark(row,col,span){
+    for(let r=row;r<row+span;r++) occupied[r*GRID_COLS+col]=true;
+  }
+  const result=[];
+  let cursor={row:0,col:0};
+  for(let slot=0;slot<cpp.length;slot++){
+    const span=cpp[slot].panel.height||1;
+    // Advance cursor until we find a free cell that fits this span
+    let placed=false;
+    for(let row=cursor.row;!placed;row++){
+      for(let col=(row===cursor.row?cursor.col:0);col<GRID_COLS;col++){
+        if(isFree(row,col,span)){
+          mark(row,col,span);
+          result.push(col);
+          // Advance cursor to next cell
+          const nextCol=col+1;
+          cursor=nextCol<GRID_COLS?{row,col:nextCol}:{row:row+1,col:0};
+          placed=true; break;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+function setSortGroup(colGroup, col){
+  const cpp=currentPagePanels();
+  if(!cpp.length) return;
+  const vcols=computeVisualCols(cpp);
+  // All panels in the clicked visual column
+  const group=cpp.filter((_,i)=>vcols[i]===colGroup);
+  if(!group.length) return;
+  const id0=panelData[group[0].pi]?.id ?? group[0].pi;
+  if(!panelSort[id0]) panelSort[id0]={col:null,dir:1};
+  const s0=panelSort[id0];
+  let newCol,newDir;
+  if(s0.col===col){ if(s0.dir===1){newCol=col;newDir=-1;}else{newCol=null;newDir=1;} }
+  else{ newCol=col; newDir=1; }
+  for(const {pi} of group){
+    const id=panelData[pi]?.id ?? pi;
+    panelSort[id]={col:newCol,dir:newDir};
+    _saveSort();
+    if(panelData[pi]) updatePanel(pi,panelData[pi].stocks);
+  }
+  refreshSharedSortIcons();
+}
+
+function refreshSharedSortIcons(){
+  const cpp=currentPagePanels();
+  const vcols=computeVisualCols(cpp);
+  for(let cg=0;cg<GRID_COLS;cg++){
+    // Use the first panel found in this visual column
+    const firstSlot=vcols.indexOf(cg);
+    const pi=firstSlot>=0?cpp[firstSlot].pi:undefined;
+    const id=(pi!==undefined)?(panelData[pi]?.id ?? pi):null;
+    const s=id!==null?panelSort[id]:null;
+    SORT_COLS.forEach(col=>{
+      const el=document.getElementById(`shi-${cg}-${col}`); if(!el) return;
+      el.textContent=(!s||s.col!==col)?'↕':(s.dir===1?'↑':'↓');
+      el.className  =(!s||s.col!==col)?'sort-icon':'sort-icon active';
+    });
+  }
+}
+
+function rebuildSharedHeader(){
+  const bar = document.getElementById('shared-col-hdr');
+  if(!bar) return;
+  bar.innerHTML='';
+  for(let cg=0; cg<GRID_COLS; cg++){
+    const cell=document.createElement('div');
+    cell.className='shared-hdr-cell';
+    cell.innerHTML=SORT_COLS.map((col,i)=>
+      `<span class="col-hdr sortable" onclick="setSortGroup(${cg},'${col}')">`+
+      `${SORT_LBLS[i]} <span id="shi-${cg}-${col}" class="sort-icon">↕</span></span>`
+    ).join('');
+    bar.appendChild(cell);
+  }
+  refreshSharedSortIcons();
+}
+function sortedStocks(pi,stocks){
+  const id=panelData[pi]?.id ?? pi;
+  const s=panelSort[id]; if(!s||!s.col)return stocks;
+  const {col,dir}=s, NV=dir===1?Infinity:-Infinity;
+  return [...stocks].sort((a,b)=>{
+    let av=a[col]??NV, bv=b[col]??NV;
+    return (typeof av==='string')?dir*av.localeCompare(bv):dir*(av-bv);
+  });
+}
+
+// ── PAGE NAVIGATION ──────────────────────────────────────────
+function gotoPage(p){
+  const numPages = totalPageCount();
+  if(p < 0 || p >= numPages) return;
+  currentPage = p;
+  location.hash = '#' + p;
+
+  // Update page label
+  const pgCount = panelData.filter(pn=>(pn.page||0)===p).length;
+  const lbl = document.getElementById('page-label');
+  if(lbl) lbl.textContent = pgCount>0
+    ? `${pgCount} SECTOR${pgCount!==1?'S':''} \u2013 ${panelData.length} TOTAL`
+    : `PAGE ${p+1} \u2013 EMPTY`;
+
+  // Build page nav buttons dynamically in case count changed
+  const nav = document.getElementById('page-nav');
+  if(nav){
+    // remove old page buttons and wraps
+    nav.querySelectorAll('.page-btn-wrap').forEach(b=>b.remove());
+    nav.querySelectorAll('.page-btn').forEach(b=>b.remove());
+    for(let i=0;i<numPages;i++){
+      const wrap=document.createElement('div');
+      wrap.className='page-btn-wrap';
+      wrap.draggable=true;
+      // ── Page tab drag-to-reorder ──────────────────────────────
+      (()=>{ const fromPg=i;
+        wrap.addEventListener('dragstart', e=>{
+          if(dragSrcPi!==null) return; // widget drag in progress
+          e.dataTransfer.effectAllowed='move';
+          e.dataTransfer.setData('text/page', String(fromPg));
+          wrap.style.opacity='.4';
+        });
+        wrap.addEventListener('dragend', ()=>{ wrap.style.opacity=''; });
+        wrap.addEventListener('dragover', e=>{
+          if(!e.dataTransfer.types.includes('text/page')) return;
+          e.preventDefault(); e.dataTransfer.dropEffect='move';
+          wrap.classList.add('pg-drag-over');
+        });
+        wrap.addEventListener('dragleave', ()=>wrap.classList.remove('pg-drag-over'));
+        wrap.addEventListener('drop', e=>{
+          wrap.classList.remove('pg-drag-over');
+          if(!e.dataTransfer.types.includes('text/page')) return;
+          e.preventDefault(); e.stopPropagation();
+          const from=parseInt(e.dataTransfer.getData('text/page'),10);
+          if(isNaN(from)||from===fromPg) return;
+          // Build new order array: insert `from` at position `fromPg`
+          const order=Array.from({length:numPages},(_,k)=>k);
+          order.splice(from,1); order.splice(fromPg,0,from);
+          fetch('/api/page/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order})})
+            .then(r=>r.json()).then(d=>{
+              if(d.remap){
+                panelData.forEach(pd=>{ pd.page=d.remap[pd.page]??pd.page; });
+                const oldNames={...pageNames};
+                pageNames={};
+                Object.entries(oldNames).forEach(([k,v])=>{
+                  const nk=d.remap[parseInt(k,10)];
+                  if(nk!=null) pageNames[String(nk)]=v;
+                });
+                const newCur=d.remap[currentPage]??currentPage;
+                currentPage=newCur; location.hash='#'+newCur;
+                gotoPage(newCur);
+              }
+            }).catch(()=>{});
+        });
+      })();
+
+      const b=document.createElement('button');
+      b.className=`page-btn${i===p?' active':''}`;
+      b.id=`pbtn-${i}`;
+      const pgLabel=pageNames[String(i)]||`PAGE ${i+1}`;
+      b.textContent=pgLabel;
+      b.title='Double-click to rename';
+      // Single click → navigate; double-click → rename (disambiguate via timer)
+      b.addEventListener('click', (()=>{ const pg=i; return e=>{
+        if(_pgClickTimer!==null && _pgClickPg===pg){
+          clearTimeout(_pgClickTimer); _pgClickTimer=null; _pgClickPg=-1;
+          // Double-click detected — open rename
+          const inp=document.createElement('input');
+          inp.className='page-rename-input';
+          inp.value=pageNames[String(pg)]||'';
+          inp.placeholder=`PAGE ${pg+1}`;
+          inp.maxLength=40;
+          wrap.replaceChild(inp, b);
+          inp.focus(); inp.select();
+          let committed=false;
+          const commit=()=>{
+            if(committed) return; committed=true;
+            const name=inp.value.trim();
+            if(name) pageNames[String(pg)]=name; else delete pageNames[String(pg)];
+            fetch(`/api/page/${pg}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(()=>{});
+            if(inp.parentNode===wrap) wrap.replaceChild(b, inp);
+            b.textContent=name||`PAGE ${pg+1}`;
+          };
+          inp.addEventListener('keydown', ke=>{
+            if(ke.key==='Enter'){ ke.preventDefault(); commit(); }
+            else if(ke.key==='Escape'){ committed=true; if(inp.parentNode===wrap) wrap.replaceChild(b,inp); }
+          });
+          inp.addEventListener('blur', commit);
+          return;
+        }
+        if(_pgClickTimer!==null){ clearTimeout(_pgClickTimer); }
+        _pgClickPg=pg;
+        _pgClickTimer=setTimeout(()=>{ _pgClickTimer=null; _pgClickPg=-1; gotoPage(pg); }, 280);
+      }; })());
+      // Cross-page drop target (widget drag)
+      (()=>{ const pg=i;
+        b.addEventListener('dragover', e=>{
+          if(dragSrcPi===null)return;
+          e.preventDefault(); e.dataTransfer.dropEffect='move';
+          b.classList.add('drop-target');
+        });
+        b.addEventListener('dragleave', ()=>b.classList.remove('drop-target'));
+        b.addEventListener('drop', e=>{
+          e.preventDefault();
+          b.classList.remove('drop-target');
+          const from=dragSrcPi;
+          _clearDragState();
+          if(from===null || pg===currentPage) return;
+          // Just reassign page — no array splicing needed
+          if(panelData[from]) panelData[from].page=pg;
+          totalPages=Math.max(totalPages, pg+1);
+          fetch(`/api/panel/${from}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:pg})}).catch(()=>{});
+          gotoPage(pg);
+        });
+      })();
+      wrap.appendChild(b);
+      // Delete button — backend refuses if page is not empty
+      const delBtn=document.createElement('button');
+      delBtn.className='page-btn-del'; delBtn.textContent='✕';
+      delBtn.title=`Delete page ${i+1} (only works if empty)`;
+      (()=>{ const pg=i; delBtn.onclick=(e)=>{e.stopPropagation();deletePage(pg);}; })();
+      wrap.appendChild(delBtn);
+      nav.insertBefore(wrap, nav.querySelector('.page-label'));
+    }
+    // Portfolio tab is now in the primary #app-tab-bar — nothing to inject here
+  }
+
+  rebuildGrid();
+}
+function rebuildGrid(){
+  closeMovePopup();
+  closeWidgetMenu();
+  rebuildSharedHeader();
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const cpp=currentPagePanels();
+  if(cpp.length===0){
+    grid.innerHTML='<div style="color:#1a3a1a;padding:60px 20px;text-align:center;font-size:10px;letter-spacing:2px;grid-column:1/-1">EMPTY PAGE — USE ⊞ ON ANY WIDGET TO MOVE IT HERE</div>';
+    return;
+  }
+  for(let slot=0; slot<Math.min(cpp.length,PAGE_SIZE); slot++){
+    const {panel,pi}=cpp[slot];
+    const h=panel.height||1;
+    const isGlobal=panel.mode==='global';
+    const isBse=panel.mode==='bse';
+    let _ap;
+    if(isGlobal)      _ap='^DJI  GC=F  BZ=F  SI=F  CL=F';
+    else if(isBse)    _ap='BSE CODE  e.g. 500325';
+    else              _ap='NSE SYMBOL  e.g. RELIANCE';
+    const _GPRESET=[['^DJI','DJIA'],['^GSPC','S&P'],['^IXIC','NQ'],['^FTSE','FTSE'],['^N225','N225'],
+      ['GC=F','Gold'],['SI=F','Silver'],['HG=F','Copper'],['PL=F','Plat'],
+      ['CL=F','WTI'],['BZ=F','Brent'],['NG=F','Gas']];
+    const _gpre=isGlobal?`<div class="gpre-row">`+_GPRESET.map(([s,l])=>
+      `<span class="gpre-chip" onclick="quickAddGlobal(${pi},'${s}')">${l}</span>`).join('')+`</div>`:'';
+    const w=document.createElement('div');
+    if(isGlobal)       w.className='widget global-panel';
+    else if(isBse)     w.className='widget bse-panel';
+    else               w.className='widget';
+    w.id=`w-${pi}`;
+    if(h>1) w.style.gridRow=`span ${h}`;
+    w.draggable=true;
+    w.addEventListener('dragstart', e=>onDragStart(e,pi));
+    w.addEventListener('dragover',  e=>onDragOver(e,pi));
+    w.addEventListener('dragleave', e=>onDragLeave(e,pi));
+    w.addEventListener('drop',      e=>onDrop(e,pi));
+    w.addEventListener('dragend',   ()=>onDragEnd());
+    w.innerHTML=
+      `<div class="widget-header">`+
+        `<span class="drag-handle" title="Drag to reorder">⠿</span>`+
+        (isGlobal?`<span class="badge-global">GLOBAL</span>`:'')+
+        (isBse   ?`<span class="badge-bse">BSE</span>`      :'')+
+        `<span class="widget-title" id="wtitle-${pi}" title="Click to rename" onclick="startRename(${pi})">${escHtml(panel.sector)}</span>`+
+        `<div class="widget-ctrl">`+
+          `<span class="sum-up"   id="sup-${pi}">▲0</span>`+
+          `<span class="sum-down" id="sdn-${pi}">▼0</span>`+
+          `<span class="sum-flat" id="sfl-${pi}">–0</span>`+
+          `<button class="btn-widget-menu" onclick="openWidgetMenu(${pi},this);event.stopPropagation()" title="Widget options">☰</button>`+
+        `</div>`+
+      `</div>`+
+      `<div class="add-form${isGlobal?' add-form-global':''}" id="add-form-${pi}">`+
+        `<input type="text" class="add-input" id="add-input-${pi}" placeholder="${_ap}"`+
+          ` oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')addTicker(${pi})" />`+
+        `<button class="btn-add-ok" id="add-btn-${pi}" onclick="addTicker(${pi})">ADD</button>`+
+        `<button class="btn-cancel" onclick="toggleAddForm(${pi})">✕</button>`+
+        `<span class="add-err" id="add-err-${pi}"></span>`+
+        _gpre+
+      `</div>`+
+      `<div class="widget-body" id="wbody-${pi}">`+
+        panel.stocks.map(()=>'<div class="stock-row"><div class="skeleton"></div></div>').join('')+
+      `</div>`;
+    grid.appendChild(w);
+    if(panel.stocks.length) updatePanel(pi, panel.stocks);
+  }
+}
+
+function initGrid(panels, startPage){
+  initialized=true;
+  const p = (startPage !== undefined) ? startPage : (parseInt(location.hash.replace('#',''))||0);
+  gotoPage(Math.max(0, Math.min(p, totalPageCount()-1)));
+}
+
+// ── RENAME SECTOR ────────────────────────────────────────────
+function startRename(pi){
+  const span=document.getElementById(`wtitle-${pi}`);
+  if(!span||span.tagName==='INPUT')return;
+  const current=span.textContent;
+  const inp=document.createElement('input');
+  inp.type='text'; inp.className='rename-input'; inp.value=current;
+  inp.onkeydown=e=>{
+    if(e.key==='Enter'){ e.preventDefault(); commitRename(pi,inp.value.trim()); }
+    if(e.key==='Escape'){ e.preventDefault(); cancelRename(pi,current); }
+  };
+  inp.onblur=()=>commitRename(pi,inp.value.trim());
+  span.replaceWith(inp);
+  inp.select();
+}
+async function commitRename(pi,newName){
+  if(!newName){ cancelRename(pi,''); return; }
+  try{
+    const res=await fetch(`/api/panel/${pi}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:newName})});
+    const data=await res.json();
+    const saved=data.sector||newName;
+    if(panelData[pi]) panelData[pi].sector=saved;
+    _replaceTitleSpan(pi,saved);
+  }catch(e){ _replaceTitleSpan(pi,newName); }
+}
+function cancelRename(pi,original){
+  _replaceTitleSpan(pi,original||(panelData[pi]&&panelData[pi].sector)||'');
+}
+function _replaceTitleSpan(pi,text){
+  const inp=document.getElementById(`wtitle-${pi}`);
+  if(!inp)return;
+  const span=document.createElement('span');
+  span.className='widget-title'; span.id=`wtitle-${pi}`;
+  span.title='Click to rename'; span.textContent=text;
+  span.onclick=()=>startRename(pi);
+  inp.replaceWith(span);
+}
+
+// ── DRAG & DROP ─────────────────────────────────────────────
+function onDragStart(e, pi){
+  // Don't start widget drag if we're dragging a symbol row
+  if(e.dataTransfer.types && e.dataTransfer.types.includes('text/symbol')) return;
+  dragSrcPi = pi;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(pi));
+  setTimeout(()=>{
+    const el=document.getElementById(`w-${pi}`); if(el) el.classList.add('is-dragging');
+    const nav=document.getElementById('page-nav'); if(nav) nav.classList.add('drag-active');
+  }, 0);
+}
+function onDragOver(e, pi){
+  // Symbol drag takes priority over widget drag
+  if(e.dataTransfer.types && e.dataTransfer.types.includes('text/symbol')){
+    e.preventDefault(); e.dataTransfer.dropEffect='move';
+    document.querySelectorAll('.widget.sym-drop-target').forEach(w=>w.classList.remove('sym-drop-target'));
+    const el=document.getElementById(`w-${pi}`); if(el) el.classList.add('sym-drop-target');
+    return;
+  }
+  if(dragSrcPi===null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  if(pi!==dragSrcPi){
+    document.querySelectorAll('.widget.drag-over').forEach(w=>w.classList.remove('drag-over'));
+    const el=document.getElementById(`w-${pi}`); if(el) el.classList.add('drag-over');
+  }
+}
+function onDragLeave(e, pi){
+  const el=document.getElementById(`w-${pi}`);
+  if(el && !el.contains(e.relatedTarget)){
+    el.classList.remove('drag-over');
+    el.classList.remove('sym-drop-target');
+  }
+}
+function onDrop(e, pi){
+  e.preventDefault();
+  // Symbol row drop
+  if(e.dataTransfer.types && e.dataTransfer.types.includes('text/symbol')){
+    document.querySelectorAll('.widget.sym-drop-target').forEach(w=>w.classList.remove('sym-drop-target'));
+    const payload = JSON.parse(e.dataTransfer.getData('text/symbol'));
+    const {fromPi, symbol} = payload;
+    if(fromPi === pi) return;
+    const srcPanel = panelData[fromPi]; const dstPanel = panelData[pi];
+    if(!srcPanel || !dstPanel) return;
+    if(dstPanel.stocks.some(s=>s.symbol===symbol)) return; // already there
+    const stock = srcPanel.stocks.find(s=>s.symbol===symbol);
+    if(!stock) return;
+    // Optimistic UI update
+    srcPanel.stocks = srcPanel.stocks.filter(s=>s.symbol!==symbol);
+    dstPanel.stocks = [...dstPanel.stocks, {...stock}];
+    updatePanel(fromPi, srcPanel.stocks);
+    updatePanel(pi,     dstPanel.stocks);
+    fetch('/api/symbol/move',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from_pi:fromPi, to_pi:pi, symbol})}).catch(()=>{});
+    return;
+  }
+  const from=dragSrcPi;
+  _clearDragState();
+  if(from===null || from===pi) return;
+  // INSERT/MOVE — not swap; splice out then re-insert at target
+  const moved=panelData.splice(from, 1)[0];
+  panelData.splice(pi, 0, moved);
+  rebuildGrid();
+  fetch('/api/panel/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from, to:pi})}).catch(()=>{});
+}
+function onDragEnd(){
+  _clearDragState();
+}
+function _clearDragState(){
+  dragSrcPi=null;
+  document.querySelectorAll('.widget.is-dragging, .widget.drag-over, .widget.sym-drop-target').forEach(w=>w.classList.remove('is-dragging','drag-over','sym-drop-target'));
+  const nav=document.getElementById('page-nav'); if(nav) nav.classList.remove('drag-active');
+  document.querySelectorAll('.page-btn.drop-target').forEach(b=>b.classList.remove('drop-target'));
+}
+
+let _symDragSrc = null;
+function _symDragStart(e, pi, symbol){
+  e.stopPropagation();  // don't trigger widget drag
+  _symDragSrc = {pi, symbol};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/symbol', JSON.stringify({fromPi:pi, symbol}));
+  setTimeout(()=>{ const r=document.getElementById(`row-${pi}-${escId(symbol)}`); if(r) r.classList.add('sym-dragging'); }, 0);
+}
+function _symDragEnd(e){
+  if(_symDragSrc){
+    const r=document.getElementById(`row-${_symDragSrc.pi}-${escId(_symDragSrc.symbol)}`); if(r) r.classList.remove('sym-dragging');
+    _symDragSrc=null;
+  }
+  document.querySelectorAll('.widget.sym-drop-target').forEach(w=>w.classList.remove('sym-drop-target'));
+}
+
+// ── WIDGET OPTIONS DROPDOWN ─────────────────────────────────
+let _wMenuEl = null;
+function openWidgetMenu(pi, btnEl){
+  closeWidgetMenu();
+  const h   = panelData[pi]?.height || 1;
+  const popup = document.createElement('div');
+  popup.className = 'widget-menu-popup';
+  popup.onclick = e => e.stopPropagation();
+  const sec = panelData[pi]?.sector || '';
+  if(sec){ const lbl=document.createElement('div'); lbl.className='wmenu-label'; lbl.textContent=sec; popup.appendChild(lbl); }
+  const sep0=document.createElement('div'); sep0.className='wmenu-sep'; popup.appendChild(sep0);
+  const rows=[
+    {t:'+ Add stock', fn:()=>{ closeWidgetMenu(); toggleAddForm(pi); }},
+    null,
+    {t:'▲  Shorter', dis:h<=1, fn:()=>{ closeWidgetMenu(); resizeWidget(pi,-1); }},
+    {t:'▼  Taller',  dis:h>=4, fn:()=>{ closeWidgetMenu(); resizeWidget(pi,+1); }},
+    null,
+    {t:'⊞  Move to page…', fn:()=>{ closeWidgetMenu(); openMovePopup(pi, btnEl); }},
+    null,
+    {t:'✕  Delete widget', danger:true, fn:()=>{ closeWidgetMenu(); deleteWidget(pi); }},
+  ];
+  rows.forEach(r=>{
+    if(!r){ const s=document.createElement('div'); s.className='wmenu-sep'; popup.appendChild(s); return; }
+    const b=document.createElement('button');
+    b.className='wmenu-item'+(r.danger?' wmenu-danger':'');
+    b.textContent=r.t; b.disabled=!!r.dis;
+    if(!r.dis) b.onclick=r.fn;
+    popup.appendChild(b);
+  });
+  document.body.appendChild(popup);
+  _wMenuEl = popup;
+  const rect=btnEl.getBoundingClientRect();
+  const pw=popup.offsetWidth||150;
+  let left=rect.right-pw; if(left<4) left=4;
+  let top=rect.bottom+3; if(top+140>window.innerHeight) top=rect.top-140;
+  popup.style.left=left+'px'; popup.style.top=top+'px';
+  setTimeout(()=>document.addEventListener('click',_autoWMenu,{once:true,capture:true}),0);
+}
+function _autoWMenu(e){
+  if(_wMenuEl&&!_wMenuEl.contains(e.target)) closeWidgetMenu();
+  else if(_wMenuEl) setTimeout(()=>document.addEventListener('click',_autoWMenu,{once:true,capture:true}),0);
+}
+function closeWidgetMenu(){
+  if(_wMenuEl){ _wMenuEl.remove(); _wMenuEl=null; }
+}
+
+// ── MOVE-TO-PAGE POPUP ───────────────────────────────────────
+let _movePopupEl = null;
+function openMovePopup(pi, btnEl){
+  if(_movePopupEl) closeMovePopup();
+  const numPages = totalPageCount();
+  const piPage=(panelData[pi]?.page)||0;
+  if(numPages < 2) return;  // nowhere to move to
+  const popup=document.createElement('div');
+  popup.className='move-popup';
+  popup.onclick=e=>e.stopPropagation();
+  for(let pg=0; pg<numPages; pg++){
+    if(pg===piPage) continue;
+    const b=document.createElement('button');
+    b.className='move-popup-item';
+    b.textContent=`→  PAGE ${pg+1}`;
+    b.onclick=()=>moveWidgetToPage(pi, pg);
+    popup.appendChild(b);
+  }
+  document.body.appendChild(popup);
+  _movePopupEl=popup;
+  const rect=btnEl.getBoundingClientRect();
+  popup.style.top=(rect.bottom+3)+'px';
+  let left=rect.left;
+  if(left+140>window.innerWidth) left=window.innerWidth-145;
+  popup.style.left=left+'px';
+  setTimeout(()=>document.addEventListener('click', _autoCMP, {once:true, capture:true}), 0);
+}
+function _autoCMP(e){
+  if(_movePopupEl && !_movePopupEl.contains(e.target)) closeMovePopup();
+  else if(_movePopupEl) setTimeout(()=>document.addEventListener('click',_autoCMP,{once:true,capture:true}),0);
+}
+function closeMovePopup(){
+  if(_movePopupEl){ _movePopupEl.remove(); _movePopupEl=null; }
+}
+function moveWidgetToPage(pi, targetPage){
+  closeMovePopup();
+  if(!panelData[pi]) return;
+  panelData[pi].page = targetPage;
+  totalPages = Math.max(totalPages, targetPage + 1);
+  fetch(`/api/panel/${pi}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:targetPage})}).catch(()=>{});
+  gotoPage(targetPage);
+}
+
+// ── NEW SECTOR ─────────────────────────────────────────────
+function toggleNewSector(forceOpen){
+  const form=document.getElementById('new-sector-form');
+  const inp =document.getElementById('new-sector-input');
+  const btn =document.getElementById('btn-new-sector');
+  const open = forceOpen !== undefined ? forceOpen : !form.classList.contains('open');
+  form.classList.toggle('open', open);
+  if(btn) btn.style.display = open ? 'none' : '';
+  if(open){ if(inp){ inp.value=''; setTimeout(()=>inp.focus(),20); } }
+}
+async function createSector(){
+  const inp=document.getElementById('new-sector-input');
+  if(!inp) return;
+  const name=inp.value.trim(); if(!name) return;
+  const mode=newSectorMode;
+  try{
+    const res=await fetch('/api/panel/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name, mode})});
+    const data=await res.json();
+    if(!res.ok){ alert(data.error||'Failed to create sector'); return; }
+    toggleNewSector(false);
+    // Reset mode toggle back to NSE
+    newSectorMode='nse';
+    const mtBtn=document.getElementById('btn-mode-toggle');
+    if(mtBtn){ mtBtn.textContent='NSE'; mtBtn.className='btn-mode-toggle'; }
+    const pg = typeof data.page==='number' ? data.page : (totalPages-1);
+    panelData.push({sector:data.sector, stocks:[], page:pg, mode, id:data.id});
+    totalPages = Math.max(totalPages, pg+1);
+    gotoPage(pg);
+  }catch(e){ alert('Network error'); }
+}
+
+async function addPage(){
+  try{
+    const res=await fetch('/api/page/add',{method:'POST'});
+    const data=await res.json();
+    if(res.ok){ totalPages=data.page_count; gotoPage(totalPages-1); }
+  }catch(e){}
+}
+
+function toggleNewSectorMode(){
+  if(newSectorMode==='nse')       newSectorMode='bse';
+  else if(newSectorMode==='bse')  newSectorMode='global';
+  else                            newSectorMode='nse';
+  const btn=document.getElementById('btn-mode-toggle');
+  if(btn){
+    if(newSectorMode==='nse')       { btn.textContent='NSE';    btn.className='btn-mode-toggle'; }
+    else if(newSectorMode==='bse')  { btn.textContent='BSE';    btn.className='btn-mode-toggle bse'; }
+    else                            { btn.textContent='GLOBAL'; btn.className='btn-mode-toggle global'; }
+  }
+}
+
+function quickAddGlobal(pi, sym){
+  const form=document.getElementById(`add-form-${pi}`);
+  const inp=document.getElementById(`add-input-${pi}`);
+  if(form&&!form.classList.contains('open')) toggleAddForm(pi);
+  if(inp){ inp.value=sym; inp.focus(); }
+}
+
+async function deleteWidget(pi){
+  const name = panelData[pi]?.sector || `Widget ${pi}`;
+  if(!confirm(`Delete "${name}"?\nThis removes the widget and all its stocks permanently.`)) return;
+  try{
+    const res = await fetch(`/api/panel/${pi}/delete`, {method:'POST'});
+    const data = await res.json();
+    if(!res.ok){ alert(data.error||'Could not delete widget'); return; }
+    panelData.splice(pi, 1);
+    // Rebuild page — stay on current page (or step back if now empty and not page 0)
+    if(currentPage > 0 && panelData.filter(p=>(p.page||0)===currentPage).length===0){
+      gotoPage(currentPage - 1);
+    } else {
+      gotoPage(currentPage);
+    }
+  }catch(e){ alert('Network error'); }
+}
+
+async function deletePage(pg){
+  // Client-side guard: check if any panel is on this page
+  const onPage=panelData.filter(p=>(p.page||0)===pg);
+  if(onPage.length>0){
+    alert(`Cannot delete PAGE ${pg+1} — it has ${onPage.length} sector${onPage.length!==1?'s':''} on it.\nMove them to another page first using the ⊞ button.`);
+    return;
+  }
+  try{
+    const res=await fetch(`/api/page/${pg}/delete`,{method:'POST'});
+    const data=await res.json();
+    if(!res.ok){ alert(data.error||'Could not delete page'); return; }
+    // Shift page attrs in local panelData (mirror what backend did)
+    panelData.forEach(p=>{ if((p.page||0)>pg) p.page=(p.page||0)-1; });
+    totalPages=data.page_count;
+    // Go to adjacent page
+    gotoPage(Math.max(0, pg>0?pg-1:0));
+  }catch(e){ alert('Network error'); }
+}
+
+async function resizeWidget(pi, delta){
+  if(!panelData[pi]) return;
+  const h=Math.max(1,Math.min(4,(panelData[pi].height||1)+delta));
+  panelData[pi].height=h;
+  const w=document.getElementById(`w-${pi}`);
+  if(w) w.style.gridRow=h>1?`span ${h}`:'';
+  fetch(`/api/panel/${pi}/setheight`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({height:h})}).catch(()=>{});
+}
+
+// ── UPDATE PANEL ─────────────────────────────────────────────
+function updatePanel(pi,stocks){
+  const body=document.getElementById(`wbody-${pi}`); if(!body)return;
+  // Never wipe the DOM while an inline ticker-edit is open in this panel
+  if(body.querySelector('.sym-edit-wrap.open')) return;
+  const sorted=sortedStocks(pi,stocks);
+  let ups=0, dns=0, flt=0;
+
+  // Compute flashes BEFORE rebuilding DOM
+  const flashes={};
+  sorted.forEach(s=>{
+    const prev=prevPrices[s.symbol];
+    if(prev!==undefined&&s.price!==null){
+      if(s.price>prev)       flashes[s.symbol]='flash-up';
+      else if(s.price<prev)  flashes[s.symbol]='flash-down';
+    }
+    if(s.price!==null) prevPrices[s.symbol]=s.price;
+  });
+
+  body.innerHTML=sorted.map(s=>{
+    const {symbol,price,change_pct,volume,market_cap}=s;
+    const cc=chgClass(change_pct), cStr=change_pct!==null?`${sign(change_pct)}${fmt(change_pct,2)}%`:'--';
+    if(cc==='up')ups++; else if(cc==='down')dns++; else if(price!==null)flt++;
+    return `<div class="stock-row" id="row-${pi}-${escId(symbol)}" draggable="true"
+      ondragstart="_symDragStart(event,${pi},'${escJs(symbol)}')"
+      ondragend="_symDragEnd(event)"
+      oncontextmenu="_ctxShow(event,${pi},'${escJs(symbol)}');return false;">` +
+      `<span class="cell-sym">`+
+        `<span class="rm-btn" onclick="removeTicker(${pi},'${escJs(symbol)}')" title="Remove ${escHtml(symbol)}">×</span>`+
+        `<span class="ed-btn" onclick="startEditTicker(${pi},'${escJs(symbol)}')" title="Edit symbol">✎</span>`+
+        `<span class="sym-edit-wrap" id="sedit-${pi}-${escId(symbol)}">`+
+          `<input class="sym-edit-inp" id="sedit-inp-${pi}-${escId(symbol)}" value="${escHtml(symbol)}"`+
+            ` oninput="this.value=this.value.toUpperCase()"`+
+            ` onkeydown="_seditKey(event,${pi},'${escJs(symbol)}')" />`+
+          `<span class="sym-edit-ok" onclick="confirmEditTicker(${pi},'${escJs(symbol)}')" title="Confirm">✓</span>`+
+          `<span class="sym-edit-cl" onclick="cancelEditTicker(${pi},'${escJs(symbol)}')" title="Cancel">✕</span>`+
+        `</span>`+
+        `${escHtml(symbol)}`+
+      `</span>`+
+      `<span class="cell-price">${fmtPrice(price)}</span>`+
+      `<span class="cell-chg ${cc}">${cStr}</span>`+
+      `<span class="cell-vol">${fmtVol(volume)}</span>`+
+      `<span class="cell-mcap">${fmtMktCap(market_cap)}</span>`+
+      `</div>`;
+  }).join('');
+
+  // Apply flash classes right after DOM update
+  for(const [sym,cls] of Object.entries(flashes)){
+    const r=document.getElementById(`row-${pi}-${escId(sym)}`); if(r) r.classList.add(cls);
+  }
+
+  const sup=document.getElementById(`sup-${pi}`), sdn=document.getElementById(`sdn-${pi}`), sfl=document.getElementById(`sfl-${pi}`);
+  if(sup)sup.textContent=`▲${ups}`; if(sdn)sdn.textContent=`▼${dns}`; if(sfl)sfl.textContent=`–${flt}`;
+}
+
+// ── ADD / REMOVE TICKER ──────────────────────────────────────
+function toggleAddForm(pi){
+  const form=document.getElementById(`add-form-${pi}`), btn=document.getElementById(`btnadd-${pi}`);
+  if(!form)return;
+  const open=form.classList.toggle('open');
+  if(btn) btn.classList.toggle('active',open);
+  if(open){ const inp=document.getElementById(`add-input-${pi}`); if(inp){inp.value='';setTimeout(()=>inp.focus(),20);} }
+}
+
+async function addTicker(pi){
+  const inp=document.getElementById(`add-input-${pi}`), btn=document.getElementById(`add-btn-${pi}`);
+  if(!inp)return;
+  const symbol=inp.value.trim().toUpperCase(); if(!symbol)return;
+  if(btn){btn.textContent='…';btn.disabled=true;}
+  try{
+    const res=await fetch(`/api/panel/${pi}/add`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    const data=await res.json();
+    if(!res.ok){ showPanelError(pi,data.error||`Failed to add ${symbol}`); }
+    else{ inp.value=''; toggleAddForm(pi); poll(); }
+  }catch(e){ showPanelError(pi,'Network error – try again'); }
+  finally{ if(btn){btn.textContent='ADD';btn.disabled=false;} }
+}
+
+function showPanelError(pi,msg){
+  const el=document.getElementById(`add-err-${pi}`); if(!el)return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+async function removeTicker(pi,symbol){
+  if(!confirm(`Remove ${symbol}?`)) return;
+  const rowEl=document.getElementById(`row-${pi}-${escId(symbol)}`);
+  if(rowEl){rowEl.style.transition='opacity .2s';rowEl.style.opacity='.15';}
+  try{
+    const res=await fetch(`/api/panel/${pi}/remove`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+    if(res.ok){
+      if(panelData[pi]){ panelData[pi].stocks=panelData[pi].stocks.filter(s=>s.symbol!==symbol); updatePanel(pi,panelData[pi].stocks); }
+    } else { if(rowEl)rowEl.style.opacity='1'; }
+  }catch(e){ if(rowEl)rowEl.style.opacity='1'; }
+}
+
+// ── EDIT TICKER ──────────────────────────────────────────────
+function startEditTicker(pi,symbol){
+  const wrap=document.getElementById(`sedit-${pi}-${escId(symbol)}`);
+  const inp =document.getElementById(`sedit-inp-${pi}-${escId(symbol)}`);
+  if(!wrap)return;
+  wrap.classList.add('open');
+  if(inp){inp.value=symbol;setTimeout(()=>{inp.focus();inp.select();},20);}
+}
+function cancelEditTicker(pi,symbol){
+  const wrap=document.getElementById(`sedit-${pi}-${escId(symbol)}`); if(wrap)wrap.classList.remove('open');
+}
+function _seditKey(e,pi,symbol){
+  if(e.key==='Enter')  confirmEditTicker(pi,symbol);
+  if(e.key==='Escape') cancelEditTicker(pi,symbol);
+}
+async function confirmEditTicker(pi,symbol){
+  const inp=document.getElementById(`sedit-inp-${pi}-${escId(symbol)}`); if(!inp)return;
+  const newSym=inp.value.trim().toUpperCase(); if(!newSym||newSym===symbol){cancelEditTicker(pi,symbol);return;}
+  inp.disabled=true;
+  try{
+    const res=await fetch(`/api/panel/${pi}/edit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({old_symbol:symbol,new_symbol:newSym})});
+    const data=await res.json();
+    if(!res.ok){ showPanelError(pi,data.error||`Failed to rename ${symbol}`); inp.disabled=false; return; }
+    // Update local panelData in-place so position is preserved
+    if(panelData[pi]){
+      const s=panelData[pi].stocks.find(s=>s.symbol===symbol);
+      if(s){s.symbol=newSym;s.name=newSym;s.price=data.price??null;s.change_pct=data.change_pct??null;}
+      // Close the edit wrap BEFORE calling updatePanel — otherwise the open-edit guard blocks the redraw
+      cancelEditTicker(pi,symbol);
+      updatePanel(pi,panelData[pi].stocks);
+    } else { poll(); }
+  }catch(e){ showPanelError(pi,'Network error – try again'); inp.disabled=false; }
+}
+
+// ── INDICES ──────────────────────────────────────────────────
+const IDX_MAP={'NIFTY 50':['idx-NIFTY50','idx-chg-NIFTY50'],'SENSEX':['idx-SENSEX','idx-chg-SENSEX'],'BANK NIFTY':['idx-BANKNIFTY','idx-chg-BANKNIFTY']};
+function updateIndices(indices){
+  for(const [name,d] of Object.entries(indices)){
+    const ids=IDX_MAP[name]; if(!ids)continue;
+    const [pId,cId]=ids;
+    const pEl=document.getElementById(pId), cEl=document.getElementById(cId);
+    if(pEl)pEl.textContent=fmtPrice(d.price);
+    if(cEl){cEl.textContent=`${sign(d.change_pct)}${fmt(d.change_pct,2)}%`; cEl.className=`idx-chg ${chgClass(d.change_pct)}`;}
+  }
+}
+
+// ── TICKER TAPE ──────────────────────────────────────────────
+function updateTicker(panels){
+  const inner=document.getElementById('ticker-inner'); if(!inner)return;
+  const items=[];
+  panels.forEach(p=>p.stocks.forEach(s=>{
+    if(s.price===null)return;
+    const cc=chgClass(s.change_pct), pct=s.change_pct!==null?` <span class="${cc}">${sign(s.change_pct)}${fmt(s.change_pct,2)}%</span>`:'';
+    items.push(`<span class="ti"><span style="color:var(--sym)">${escHtml(s.symbol)}</span> <span class="cell-price">${fmtPrice(s.price)}</span>${pct}</span><span class="tsep">|</span>`);
+  }));
+  if(items.length)inner.innerHTML=items.join('');
+}
+
+// ── FORCE REFRESH ────────────────────────────────────────────
+function forceRefresh(){
+  fetch('/api/refresh',{method:'POST'}).catch(()=>{});
+  const el=document.getElementById('data-age'); if(el)el.textContent='REFRESHING…';
+}
+
+// ── MAIN POLL ────────────────────────────────────────────────
+async function poll(){
+  try{
+    const res=await fetch('/api/panels'); if(!res.ok){ console.error('API error',res.status); return; }
+    const data=await res.json();
+    if(!Array.isArray(data.panels)||data.panels.length===0){ console.error('No panels in response'); return; }
+    // Merge incoming panels — match by id; only replace stocks/sector/mode
+    const incoming = data.panels;
+    const incomingById = {};
+    incoming.forEach(p=>{ if(p.id) incomingById[p.id]=p; });
+    const sameSet = panelData.length===incoming.length &&
+      panelData.every((p,i)=>p.id && incoming[i] && p.id===incoming[i].id);
+    if(sameSet){
+      // Same panel set, same order — only update volatile fields
+      incoming.forEach((src,i)=>{
+        panelData[i].sector = src.sector;
+        panelData[i].stocks = src.stocks;
+        panelData[i].mode   = src.mode;
+        if(panelData[i].height===undefined) panelData[i].height=src.height||1;
+      });
+    } else {
+      // Count how many local panels we can match by id to incoming
+      const matchCount = panelData.filter(p=>p.id && incomingById[p.id]).length;
+      if(matchCount === panelData.length && matchCount === incoming.length){
+        // Same panels, different order (reorder happened) — update in-place by id
+        const localById = {};
+        panelData.forEach(p=>{ if(p.id) localById[p.id]=p; });
+        incoming.forEach((src,i)=>{
+          const local = localById[src.id];
+          if(local){ local.sector=src.sector; local.stocks=src.stocks; local.mode=src.mode; if(local.height===undefined) local.height=src.height||1; }
+        });
+        // Re-order panelData to match incoming server order
+        panelData.length=0;
+        incoming.forEach(src=>{ const local=localById[src.id]; if(local) panelData.push(local); });
+      } else {
+        // Panel set actually changed (add/delete) — full replace, preserve sort via id
+        panelData = incoming;
+        panelData.forEach(p=>{ if(p.height===undefined) p.height=1; });
+      }
+    }
+    const maxPg=panelData.reduce((m,p)=>Math.max(m,(p.page||0)+1),0)||1;
+    totalPages = Math.max(data.page_count||0, maxPg);
+    if(data.page_names) pageNames = data.page_names;
+
+    if(!initialized){
+      initGrid(panelData);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    // Update only panels visible on current page
+    const cpp=panelData.map((p,i)=>({p,i})).filter(({p})=>(p.page||0)===currentPage);
+    for(const {p,i} of cpp) updatePanel(i,p.stocks);
+    updateIndices(data.indices||{});
+    updateTicker(panelData);
+    const ageEl=document.getElementById('data-age'), dateEl=document.getElementById('footer-date');
+    if(ageEl){
+      const ga=data.good_age, ts=data.last_good_ts;
+      if(ga==null){ ageEl.textContent='LOADING…'; ageEl.className=''; }
+      else if(ga<120){ ageEl.textContent=`DATA: ${ga}s AGO`; ageEl.className=''; }
+      else if(ga<600){ const m=Math.round(ga/60); ageEl.textContent=`DATA: ${m}m AGO${ts?' ('+ts+')':''}`;  ageEl.className='stale'; }
+      else           { const m=Math.round(ga/60); ageEl.textContent=`STALE: ${m}m AGO${ts?' (last good '+ts+')':''}`;  ageEl.className='very-stale'; }
+    }
+    if(dateEl&&data.date)dateEl.textContent=data.date;
+  }catch(e){ console.error('Poll error:',e); }
+}
+
+// URL hash = page index, enables multi-window (open localhost:5000#1 for page 2, etc.)
+window.addEventListener('hashchange', ()=>{
+  const p=parseInt(location.hash.replace('#',''));
+  if(!isNaN(p) && p!==currentPage) gotoPage(p);
+});
+
+// ── STOCK ROW CONTEXT MENU ─────────────────────────────────
+function _ctxShow(e, pi, sym){
+  e.preventDefault();
+  _ctxPi=pi; _ctxSym=sym;
+  const m=document.getElementById('ctx-menu');
+  if(!m) return;
+  const lbl=document.getElementById('ctx-sym-lbl');
+  if(lbl) lbl.textContent=sym;
+  m.style.display='block';
+  let x=e.clientX+2, y=e.clientY+2;
+  if(x+170>window.innerWidth)  x=window.innerWidth-175;
+  if(y+110>window.innerHeight) y=window.innerHeight-115;
+  m.style.left=x+'px'; m.style.top=y+'px';
+  setTimeout(()=>document.addEventListener('mousedown',_ctxHide,{once:true,capture:true}),0);
+}
+function _ctxHide(e){
+  const m=document.getElementById('ctx-menu');
+  if(m&&m.contains(e?.target)) return; // click inside menu — let the item handle it
+  if(m) m.style.display='none';
+  _ctxPi=null; _ctxSym=null;
+}
+function _ctxOpenYF(){
+  if(_ctxSym===null) return;
+  const sym=_ctxSym, mode=panelData[_ctxPi]?.mode||'nse';
+  _ctxHide();
+  let yfSym;
+  if(mode==='nse')         yfSym=`${sym}.NS`;
+  else if(mode==='bse')    yfSym=`${sym}.BO`;
+  else                     yfSym=encodeURIComponent(sym);
+  window.open(`https://finance.yahoo.com/chart/${yfSym}`,'_blank','noopener,noreferrer');
+}
+function _ctxOpenTV(){
+  if(_ctxSym===null) return;
+  const sym=_ctxSym, mode=panelData[_ctxPi]?.mode||'nse';
+  _ctxHide();
+  let tvSym;
+  if(mode==='nse'){
+    tvSym=`NSE:${sym}`;
+  } else if(mode==='bse'){
+    tvSym=`BSE:${sym}`;
+  } else {
+    const MAP={'^DJI':'DJ:DJI','^GSPC':'SP:SPX','^IXIC':'NASDAQ:IXIC','^RUT':'TVC:RUT',
+      '^VIX':'TVC:VIX','^FTSE':'TVC:UKX','^GDAXI':'XETR:DAX','^FCHI':'EURONEXT:PX1',
+      '^STOXX50E':'EURONEXT:STOXX50E','^N225':'TSE:NI225','^HSI':'TVC:HSI',
+      '^KS11':'KRX:KOSPI','^BSESN':'BSE:SENSEX','^AXJO':'ASX:XJO',
+      'GC=F':'COMEX:GC1!','SI=F':'COMEX:SI1!','CL=F':'NYMEX:CL1!','BZ=F':'NYMEX:BB1!',
+      'NG=F':'NYMEX:NG1!','HG=F':'COMEX:HG1!','PL=F':'NYMEX:PL1!','PA=F':'NYMEX:PA1!',
+      'DX=F':'TVC:DXY','ZB=F':'CBOT:ZB1!','ZN=F':'CBOT:ZN1!',
+      'EURUSD=X':'FX:EURUSD','GBPUSD=X':'FX:GBPUSD','USDJPY=X':'FX:USDJPY',
+      'USDCAD=X':'FX:USDCAD','AUDUSD=X':'FX:AUDUSD','USDINR=X':'FX:USDINR'};
+    tvSym=MAP[sym]||sym;
+  }
+  window.open(`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSym)}`,'_blank','noopener,noreferrer');
+}
+function _ctxCopy(){
+  if(_ctxSym===null) return;
+  const sym=_ctxSym; _ctxHide();
+  navigator.clipboard?.writeText(sym).catch(()=>{});
+}
+
+poll();
+setInterval(poll,POLL_MS);
+</script>
+
+<!-- RIGHT-CLICK CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-label" id="ctx-sym-lbl"></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="_ctxOpenYF()">&#x1F4C8; Yahoo Finance Chart</div>
+  <div class="ctx-item" onclick="_ctxOpenTV()">&#x25C8; TradingView Chart</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="_ctxCopy()">&#x2398; Copy Symbol</div>
+</div>
+</body>
+</html>
