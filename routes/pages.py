@@ -1,9 +1,12 @@
-"""Blueprint: page management routes — add, delete, rename, reorder."""
+"""Blueprint: page management routes — add, delete, rename, reorder. All state in NeonDB."""
 
 from flask import Blueprint, jsonify, request
 
 import state
-from core.customizations import _load_customs, _save_customs
+from core.db import (
+    _db_get_page_count, _db_set_page_count, _db_get_page_names,
+    _db_set_page_name, _db_shift_pages, _db_remap_pages, _db_remap_page_names,
+)
 
 bp = Blueprint("pages", __name__)
 
@@ -11,14 +14,12 @@ bp = Blueprint("pages", __name__)
 @bp.route("/api/page/add", methods=["POST"])
 def api_add_page():
     """Increment stored page count to allow empty pages."""
-    customs  = _load_customs()
     max_used = max(
         (p.get("page", j // state.PAGE_SIZE) for j, p in enumerate(state.panels)), default=0
     )
-    current  = max(max_used + 1, customs.get("__page_count__", 0))
-    customs["__page_count__"] = current + 1
-    _save_customs(customs)
-    return jsonify({"status": "ok", "page_count": customs["__page_count__"]})
+    current = max(max_used + 1, _db_get_page_count())
+    _db_set_page_count(current + 1)
+    return jsonify({"status": "ok", "page_count": current + 1})
 
 
 @bp.route("/api/page/<int:pg>/delete", methods=["POST"])
@@ -27,19 +28,24 @@ def api_delete_page(pg: int):
     occupied = [p for p in state.panels if p.get("page", 0) == pg]
     if occupied:
         return jsonify({"error": f"Page has {len(occupied)} sector(s) on it — move them first"}), 409
-    customs = _load_customs()
-    current  = customs.get("__page_count__", 0)
-    page_map = customs.get("__pages__", {})
+    current = _db_get_page_count()
+    # Shift all panel pages above pg down by 1 — both in memory and DB
     for p in state.panels:
-        old_pg = p.get("page", 0)
-        if old_pg > pg:
-            p["page"] = old_pg - 1
-            page_map[p["id"]] = old_pg - 1
-    customs["__pages__"]      = page_map
-    customs["__page_count__"] = max(0, current - 1)
-    _save_customs(customs)
+        if p.get("page", 0) > pg:
+            p["page"] -= 1
+    _db_shift_pages(pg + 1, -1)
+    # Remap page names: delete pg's name, shift names above pg down
+    page_names = _db_get_page_names()
+    _db_set_page_name(pg, "")
+    for idx_str, name in sorted(page_names.items(), key=lambda x: int(x[0])):
+        idx = int(idx_str)
+        if idx > pg:
+            _db_set_page_name(idx - 1, name)
+            _db_set_page_name(idx, "")
+    new_count = max(0, current - 1)
+    _db_set_page_count(new_count)
     max_used = max((p.get("page", 0) for p in state.panels), default=0) if state.panels else 0
-    return jsonify({"status": "ok", "page_count": max(max_used + 1, customs["__page_count__"])})
+    return jsonify({"status": "ok", "page_count": max(max_used + 1, new_count)})
 
 
 @bp.route("/api/page/<int:pg>/rename", methods=["POST"])
@@ -49,13 +55,7 @@ def api_rename_page(pg: int):
     name = (body.get("name") or "").strip()
     if len(name) > 40:
         return jsonify({"error": "Name too long"}), 400
-    customs    = _load_customs()
-    page_names = customs.setdefault("__page_names__", {})
-    if name:
-        page_names[str(pg)] = name
-    else:
-        page_names.pop(str(pg), None)
-    _save_customs(customs)
+    _db_set_page_name(pg, name)
     return jsonify({"status": "ok", "page": pg, "name": name})
 
 
@@ -71,12 +71,6 @@ def api_reorder_pages():
     for p in state.panels:
         old_pg = p.get("page", 0)
         p["page"] = remap.get(old_pg, old_pg)
-    customs = _load_customs()
-    page_map = customs.get("__pages__", {})
-    customs["__pages__"] = {pid: remap.get(pg, pg) for pid, pg in page_map.items()}
-    old_names = customs.get("__page_names__", {})
-    customs["__page_names__"] = {
-        str(remap[int(k)]): v for k, v in old_names.items() if int(k) in remap
-    }
-    _save_customs(customs)
+    _db_remap_pages(remap)
+    _db_remap_page_names(remap)
     return jsonify({"status": "ok", "remap": remap})

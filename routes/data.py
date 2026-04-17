@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from flask import Blueprint, jsonify, make_response, render_template
 
 import state
-from core.customizations import _load_customs
+from core.db import _db_get_page_count, _db_get_page_names
 from core.fetcher import update_all_prices
 
 bp = Blueprint("data", __name__)
@@ -79,12 +79,11 @@ def api_panels():
             "mode":   panel.get("mode", "nse"),
         })
 
-    _customs_snap = _load_customs()
-    _max_used_pg  = max(
+    _max_used_pg = max(
         (p.get("page", j // state.PAGE_SIZE) for j, p in enumerate(state.panels)),
         default=0
     )
-    _page_count = max(_max_used_pg + 1, _customs_snap.get("__page_count__", 0))
+    _page_count = max(_max_used_pg + 1, _db_get_page_count())
     return jsonify({
         "panels":       result,
         "indices":      idx_copy,
@@ -95,7 +94,7 @@ def api_panels():
         "last_good_ts": IST_good,
         "next_refresh": max(0, state.FETCH_INTERVAL - (fetch_age or state.FETCH_INTERVAL)),
         "page_count":   _page_count,
-        "page_names":   _customs_snap.get("__page_names__", {}),
+        "page_names":   _db_get_page_names(),
     })
 
 
