@@ -593,35 +593,8 @@
     ]
   },
   "Sheet 10": {
-    "added": [
-      {
-        "symbol": "ZYDUSLIFE",
-        "name": "ZYDUSLIFE"
-      },
-      {
-        "symbol": "JUBLPHARMA",
-        "name": "JUBLPHARMA"
-      },
-      {
-        "symbol": "STAR",
-        "name": "STAR"
-      }
-    ],
-    "removed": [
-      "MERCK",
-      "ORCHIDPHAR",
-      "STERLINBIO",
-      "CADILAHC",
-      "ESSDEE",
-      "JUBILANT",
-      "OPTOCIRCUI",
-      "APOLLOHOSP",
-      "FORTIS",
-      "HCG",
-      "LALPATHLAB",
-      "THYROCARE",
-      "NH"
-    ]
+    "added": [],
+    "removed": []
   },
   "Sheet 11": {
     "added": [],

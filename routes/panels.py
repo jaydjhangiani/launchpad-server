@@ -1,0 +1,411 @@
+"""Blueprint: all panel and symbol management routes."""
+
+import time
+
+from flask import Blueprint, jsonify, request
+
+import state
+from core.customizations import _load_customs, _save_customs, _save_sheet_data
+from core.fetcher import fetch_symbols_batch, fetch_bse_batch, fetch_global_batch
+
+bp = Blueprint("panels", __name__)
+
+
+@bp.route("/api/panel/<int:pi>/add", methods=["POST"])
+def api_add_ticker(pi: int):
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body   = request.get_json(force=True, silent=True) or {}
+    symbol = (body.get("symbol") or "").strip().upper()
+    if not symbol or len(symbol) > 20:
+        return jsonify({"error": "Invalid symbol"}), 400
+
+    # Auto-detect explicit exchange suffix typed by user (e.g. RELIANCE.NS or 500325.BO)
+    mode   = state.panels[pi].get("mode", "nse")
+    is_bse = False
+    if symbol.endswith(".BO"):
+        symbol = symbol[:-3]
+        is_bse = True
+    elif symbol.endswith(".NS"):
+        symbol = symbol[:-3]
+        is_bse = False
+    elif mode == "bse":
+        is_bse = True
+
+    existing = {s["symbol"] for s in state.panels[pi]["stocks"]}
+    if symbol in existing:
+        return jsonify({"error": f"{symbol} is already in this panel"}), 409
+
+    with state.cache_lock:
+        cached = dict(state.price_cache.get(symbol, {}))
+    if not cached:
+        if mode == "global":
+            result = fetch_global_batch([symbol])
+        elif is_bse:
+            result = fetch_bse_batch([symbol])
+            if not result:
+                result = fetch_symbols_batch([symbol])
+                if result:
+                    is_bse = False
+        else:
+            result = fetch_symbols_batch([symbol])
+            if not result:
+                result = fetch_bse_batch([symbol])
+                if result:
+                    is_bse = True
+        if result:
+            with state.cache_lock:
+                state.price_cache.update(result)
+            cached = result.get(symbol, {})
+
+    new_stock = {"symbol": symbol, "name": symbol}
+    state.panels[pi]["stocks"].append(new_stock)
+
+    if mode == "global":
+        if symbol not in state.global_symbols:
+            state.global_symbols.append(symbol)
+    else:
+        if symbol not in state.all_symbols:
+            state.all_symbols.append(symbol)
+        if is_bse:
+            state.bse_override.add(symbol)
+        else:
+            state.bse_override.discard(symbol)
+
+    pk = state.panels[pi]["id"]
+    if pk in state.raw_sheet_data:
+        if not any(s["symbol"] == symbol for s in state.raw_sheet_data[pk]):
+            state.raw_sheet_data[pk].append({"symbol": symbol, "name": symbol})
+            _save_sheet_data()
+    else:
+        customs = _load_customs()
+        customs.setdefault(pk, {"added": [], "removed": []})
+        if not any(s["symbol"] == symbol for s in customs[pk].get("added", [])):
+            customs[pk].setdefault("added", []).append(new_stock)
+        customs[pk]["removed"] = [s for s in customs[pk].get("removed", []) if s != symbol]
+        _save_customs(customs)
+
+    pdata = cached
+    return jsonify({
+        "status":     "ok",
+        "symbol":     symbol,
+        "price":      pdata.get("price") if pdata else None,
+        "change_pct": pdata.get("change_pct") if pdata else None,
+    })
+
+
+@bp.route("/api/panel/<int:pi>/rename", methods=["POST"])
+def api_rename_panel(pi: int):
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body = request.get_json(force=True, silent=True) or {}
+    name = (body.get("name") or "").strip()
+    if not name or len(name) > 60:
+        return jsonify({"error": "Invalid name"}), 400
+    state.panels[pi]["sector"] = name
+    customs = _load_customs()
+    pk = state.panels[pi]["id"]
+    customs.setdefault(pk, {"added": [], "removed": []})
+    customs[pk]["sector_name"] = name
+    _save_customs(customs)
+    return jsonify({"status": "ok", "sector": name})
+
+
+@bp.route("/api/panel/<int:pi>/remove", methods=["POST"])
+def api_remove_ticker(pi: int):
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body   = request.get_json(force=True, silent=True) or {}
+    symbol = (body.get("symbol") or "").strip().upper()
+    if not symbol:
+        return jsonify({"error": "No symbol provided"}), 400
+    state.panels[pi]["stocks"] = [s for s in state.panels[pi]["stocks"] if s["symbol"] != symbol]
+    pk = state.panels[pi]["id"]
+    if pk in state.raw_sheet_data:
+        state.raw_sheet_data[pk] = [s for s in state.raw_sheet_data[pk] if s["symbol"] != symbol]
+        _save_sheet_data()
+    else:
+        customs = _load_customs()
+        customs.setdefault(pk, {"added": [], "removed": []})
+        if symbol not in customs[pk].get("removed", []):
+            customs[pk].setdefault("removed", []).append(symbol)
+        customs[pk]["added"] = [s for s in customs[pk].get("added", []) if s["symbol"] != symbol]
+        _save_customs(customs)
+    return jsonify({"status": "ok", "removed": symbol})
+
+
+@bp.route("/api/panel/<int:pi>/edit", methods=["POST"])
+def api_edit_ticker(pi: int):
+    """Rename a ticker symbol in-place (preserves position in the stock list)."""
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body       = request.get_json(force=True, silent=True) or {}
+    old_symbol = (body.get("old_symbol") or "").strip().upper()
+    new_symbol = (body.get("new_symbol") or "").strip().upper()
+    if not old_symbol or not new_symbol:
+        return jsonify({"error": "Both old_symbol and new_symbol are required"}), 400
+    if len(new_symbol) > 20:
+        return jsonify({"error": "Symbol too long"}), 400
+    if old_symbol == new_symbol:
+        return jsonify({"status": "ok", "symbol": new_symbol})
+    existing = {s["symbol"] for s in state.panels[pi]["stocks"]}
+    if old_symbol not in existing:
+        return jsonify({"error": f"{old_symbol} not found in this panel"}), 404
+    if new_symbol in existing:
+        return jsonify({"error": f"{new_symbol} is already in this panel"}), 409
+
+    for s in state.panels[pi]["stocks"]:
+        if s["symbol"] == old_symbol:
+            s["symbol"] = new_symbol
+            s["name"]   = new_symbol
+            break
+
+    mode = state.panels[pi].get("mode", "nse")
+    sym_list = state.global_symbols if mode == "global" else state.all_symbols
+    if old_symbol in sym_list and new_symbol not in sym_list:
+        sym_list[sym_list.index(old_symbol)] = new_symbol
+    elif new_symbol not in sym_list:
+        sym_list.append(new_symbol)
+
+    if old_symbol in state.bse_override:
+        state.bse_override.discard(old_symbol)
+        if mode == "bse":
+            state.bse_override.add(new_symbol)
+
+    pk = state.panels[pi]["id"]
+    if pk in state.raw_sheet_data:
+        for s in state.raw_sheet_data[pk]:
+            if s["symbol"] == old_symbol:
+                s["symbol"] = new_symbol
+                s["name"]   = new_symbol
+        if not any(s["symbol"] == new_symbol for s in state.raw_sheet_data[pk]):
+            state.raw_sheet_data[pk].append({"symbol": new_symbol, "name": new_symbol})
+        state.raw_sheet_data[pk] = [
+            s for s in state.raw_sheet_data[pk]
+            if s["symbol"] != old_symbol or s["symbol"] == new_symbol
+        ]
+        _save_sheet_data()
+    else:
+        customs = _load_customs()
+        customs.setdefault(pk, {"added": [], "removed": []})
+        for s in customs[pk].get("added", []):
+            if s["symbol"] == old_symbol:
+                s["symbol"] = new_symbol
+                s["name"]   = new_symbol
+        if not any(s["symbol"] == new_symbol for s in customs[pk].get("added", [])):
+            customs[pk].setdefault("added", []).append({"symbol": new_symbol, "name": new_symbol})
+        if old_symbol not in customs[pk].get("removed", []):
+            customs[pk].setdefault("removed", []).append(old_symbol)
+        customs[pk]["removed"] = [s for s in customs[pk]["removed"] if s != new_symbol]
+        _save_customs(customs)
+
+    if mode == "global":
+        fetcher = fetch_global_batch
+    elif mode == "bse":
+        fetcher = fetch_bse_batch
+    else:
+        fetcher = fetch_symbols_batch
+    result = fetcher([new_symbol])
+    if result:
+        with state.cache_lock:
+            state.price_cache.update(result)
+    pdata = state.price_cache.get(new_symbol, {})
+    return jsonify({
+        "status":     "ok",
+        "old_symbol": old_symbol,
+        "symbol":     new_symbol,
+        "price":      pdata.get("price"),
+        "change_pct": pdata.get("change_pct"),
+    })
+
+
+@bp.route("/api/panel/new", methods=["POST"])
+def api_new_panel():
+    """Create a brand-new empty sector panel."""
+    body = request.get_json(force=True, silent=True) or {}
+    name = (body.get("name") or "").strip()
+    if not name or len(name) > 60:
+        return jsonify({"error": "Name must be 1-60 characters"}), 400
+    mode = (body.get("mode") or "nse").strip().lower()
+    if mode not in ("nse", "global", "bse"):
+        mode = "nse"
+    target_pg = (
+        max((p.get("page", j // state.PAGE_SIZE) for j, p in enumerate(state.panels)), default=0)
+        if state.panels else 0
+    )
+    panel_id  = f"_uc_{int(time.time() * 1000)}"
+    new_panel = {"sector": name, "stocks": [], "id": panel_id, "page": target_pg, "mode": mode}
+    state.panels.append(new_panel)
+    customs = _load_customs()
+    customs[panel_id] = {"user_created": True, "sector_name": name, "mode": mode, "added": [], "removed": []}
+    customs["__order__"] = [p["id"] for p in state.panels]
+    customs.setdefault("__pages__", {})[panel_id] = target_pg
+    _save_customs(customs)
+    return jsonify({"status": "ok", "id": panel_id, "index": len(state.panels) - 1,
+                    "sector": name, "page": target_pg})
+
+
+@bp.route("/api/panel/<int:pi>/delete", methods=["POST"])
+def api_delete_panel(pi: int):
+    """Permanently delete a panel (any mode)."""
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    panel = state.panels.pop(pi)
+    pid   = panel["id"]
+
+    still_used: set = set()
+    for p in state.panels:
+        for s in p.get("stocks", []):
+            still_used.add(s["symbol"])
+
+    if panel.get("mode") == "global":
+        state.global_symbols[:] = [s for s in state.global_symbols if s in still_used]
+    else:
+        state.all_symbols[:] = [s for s in state.all_symbols if s in still_used]
+        for s in list(state.bse_override):
+            if s not in still_used:
+                state.bse_override.discard(s)
+
+    customs = _load_customs()
+    customs.pop(pid, None)
+    customs["__order__"]  = [p["id"] for p in state.panels]
+    customs.get("__pages__",   {}).pop(pid, None)
+    customs.get("__heights__", {}).pop(pid, None)
+    max_pg = max((p.get("page", 0) for p in state.panels), default=0) if state.panels else 0
+    customs["__page_count__"] = max(max_pg + 1, 1)
+    _save_customs(customs)
+    return jsonify({"status": "ok", "deleted": pid})
+
+
+@bp.route("/api/panel/swap", methods=["POST"])
+def api_swap_panels():
+    """Swap two panels by index (for drag-and-drop reordering)."""
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        a, b = int(body.get("a", -1)), int(body.get("b", -1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid indices"}), 400
+    if not (0 <= a < len(state.panels)) or not (0 <= b < len(state.panels)) or a == b:
+        return jsonify({"error": "Invalid panel indices"}), 400
+    state.panels[a], state.panels[b] = state.panels[b], state.panels[a]
+    customs = _load_customs()
+    customs["__order__"] = [p["id"] for p in state.panels]
+    _save_customs(customs)
+    return jsonify({"status": "ok", "swapped": [a, b]})
+
+
+@bp.route("/api/symbol/move", methods=["POST"])
+def api_move_symbol():
+    """Move a symbol from one panel to another."""
+    body   = request.get_json(force=True, silent=True) or {}
+    symbol = (body.get("symbol") or "").strip().upper()
+    try:
+        from_pi = int(body.get("from_pi", -1))
+        to_pi   = int(body.get("to_pi",   -1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid indices"}), 400
+    if not symbol:
+        return jsonify({"error": "No symbol"}), 400
+    if not (0 <= from_pi < len(state.panels)) or not (0 <= to_pi < len(state.panels)) or from_pi == to_pi:
+        return jsonify({"error": "Invalid panel indices"}), 400
+
+    src   = state.panels[from_pi]
+    dst   = state.panels[to_pi]
+    stock = next((s for s in src["stocks"] if s["symbol"] == symbol), None)
+    if not stock:
+        return jsonify({"error": f"{symbol} not in source panel"}), 404
+    if any(s["symbol"] == symbol for s in dst["stocks"]):
+        return jsonify({"error": f"{symbol} already in destination panel"}), 409
+
+    src["stocks"] = [s for s in src["stocks"] if s["symbol"] != symbol]
+    dst["stocks"].append(stock)
+
+    src_pk  = src["id"]
+    dst_pk  = dst["id"]
+    changed = False
+    if src_pk in state.raw_sheet_data:
+        state.raw_sheet_data[src_pk] = [s for s in state.raw_sheet_data[src_pk] if s["symbol"] != symbol]
+        changed = True
+    if dst_pk in state.raw_sheet_data:
+        if not any(s["symbol"] == symbol for s in state.raw_sheet_data[dst_pk]):
+            state.raw_sheet_data[dst_pk].append({"symbol": symbol, "name": stock.get("name", symbol)})
+            changed = True
+    if changed:
+        _save_sheet_data()
+
+    if src_pk not in state.raw_sheet_data or dst_pk not in state.raw_sheet_data:
+        customs = _load_customs()
+        if src_pk not in state.raw_sheet_data:
+            customs.setdefault(src_pk, {"added": [], "removed": []})
+            customs[src_pk]["added"] = [s for s in customs[src_pk].get("added", []) if s["symbol"] != symbol]
+            if symbol not in customs[src_pk].get("removed", []):
+                customs[src_pk].setdefault("removed", []).append(symbol)
+        if dst_pk not in state.raw_sheet_data:
+            customs.setdefault(dst_pk, {"added": [], "removed": []})
+            if not any(s["symbol"] == symbol for s in customs[dst_pk].get("added", [])):
+                customs[dst_pk].setdefault("added", []).append(
+                    {"symbol": symbol, "name": stock.get("name", symbol)}
+                )
+            customs[dst_pk]["removed"] = [s for s in customs[dst_pk].get("removed", []) if s != symbol]
+        _save_customs(customs)
+    return jsonify({"status": "ok", "symbol": symbol, "from": from_pi, "to": to_pi})
+
+
+@bp.route("/api/panel/move", methods=["POST"])
+def api_move_panel():
+    """Move a panel from index `from` to index `to`, shifting panels in between."""
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        frm = int(body.get("from", -1))
+        to  = int(body.get("to",   -1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid indices"}), 400
+    if not (0 <= frm < len(state.panels)) or not (0 <= to <= len(state.panels)) or frm == to:
+        return jsonify({"error": "Invalid panel indices"}), 400
+    panel = state.panels.pop(frm)
+    state.panels.insert(to, panel)
+    customs = _load_customs()
+    customs["__order__"] = [p["id"] for p in state.panels]
+    _save_customs(customs)
+    return jsonify({"status": "ok", "from": frm, "to": to})
+
+
+@bp.route("/api/panel/<int:pi>/setpage", methods=["POST"])
+def api_set_panel_page(pi: int):
+    """Assign a panel to an explicit display page."""
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        page = int(body.get("page", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid page"}), 400
+    if page < 0:
+        return jsonify({"error": "Page must be >= 0"}), 400
+    state.panels[pi]["page"] = page
+    customs = _load_customs()
+    customs.setdefault("__pages__", {})[state.panels[pi]["id"]] = page
+    max_used = max(
+        (p.get("page", j // state.PAGE_SIZE) for j, p in enumerate(state.panels)), default=0
+    )
+    customs["__page_count__"] = max(max_used + 1, customs.get("__page_count__", 0), page + 1)
+    _save_customs(customs)
+    return jsonify({"status": "ok", "page": page})
+
+
+@bp.route("/api/panel/<int:pi>/setheight", methods=["POST"])
+def api_set_panel_height(pi: int):
+    """Set the row-span height of a panel (1-4 units)."""
+    if pi < 0 or pi >= len(state.panels):
+        return jsonify({"error": "Invalid panel index"}), 400
+    body = request.get_json(force=True, silent=True) or {}
+    try:
+        height = int(body.get("height", 1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid height"}), 400
+    height = max(1, min(4, height))
+    state.panels[pi]["height"] = height
+    customs = _load_customs()
+    customs.setdefault("__heights__", {})[state.panels[pi]["id"]] = height
+    _save_customs(customs)
+    return jsonify({"status": "ok", "height": height})
