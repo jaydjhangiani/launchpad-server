@@ -11,6 +11,7 @@ import sys
 import threading
 
 from flask import Flask
+from flask_cors import CORS
 
 import state
 from core.db import _init_db, _load_panels_from_db, _load_dead_symbols_from_db
@@ -18,6 +19,7 @@ from core.fetcher import background_updater, mktcap_updater
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+CORS(app, origins=["http://localhost:5173", "http://localhost:3000"])
 
 
 # ---------------------------------------------------------------------------
