@@ -325,6 +325,8 @@ function gotoPage(p){
                 gotoPage(newCur);
               }
             }).catch(e=>console.error('page reorder failed:',e));
+        });
+      })();
 
       const b=document.createElement('button');
       b.className=`page-btn${i===p?' active':''}`;
