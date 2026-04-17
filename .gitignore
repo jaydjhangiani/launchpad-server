@@ -38,3 +38,8 @@ blp work.xlsx
 
 # Legacy — replaced by launchpad.db
 sheet_data.json
+
+# Runtime disk caches (warm-start only — regenerated automatically)
+price_cache.json
+mktcap_cache.json
+bse_override.json
