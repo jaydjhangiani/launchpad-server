@@ -59,29 +59,18 @@ print(f"[INIT] {len(state.panels)} panels, {len(state.all_symbols)} unique symbo
 # ---------------------------------------------------------------------------
 _init_customs = _load_customs()
 
-# Pass 1: apply per-panel customisations to DB-sourced panels
+# Pass 1: apply per-panel customisations to DB-sourced panels.
+# For panels that live in the database (raw_sheet_data), the DB is the sole
+# source of truth for which stocks are present — only sector_name and mode
+# overrides are read from user_customizations.json.
+# removed/added from user_customizations.json are only applied to
+# user-created panels (handled in Pass 2).
 for _panel in state.panels:
     _cust = _init_customs.get(_panel["id"], {})
     if _cust.get("sector_name"):
         _panel["sector"] = _cust["sector_name"]
     if _cust.get("mode"):
         _panel["mode"] = _cust["mode"]
-    _removed = set(_cust.get("removed", []))
-    _panel["stocks"] = [s for s in _panel["stocks"] if s["symbol"] not in _removed]
-    _existing = {s["symbol"] for s in _panel["stocks"]}
-    _pmode = _panel.get("mode", "nse")
-    for _s in _cust.get("added", []):
-        if _s["symbol"] not in _existing:
-            _panel["stocks"].append(_s)
-            _sym = _s["symbol"]
-            if _pmode == "global":
-                if _sym not in state.global_symbols:
-                    state.global_symbols.append(_sym)
-            else:
-                if _sym not in state.all_symbols:
-                    state.all_symbols.append(_sym)
-                if _pmode == "bse":
-                    state.bse_override.add(_sym)
 
 # Pass 2: reconstruct user-created panels from saved order
 _existing_ids = {p["id"] for p in state.panels}
