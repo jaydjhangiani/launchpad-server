@@ -14,9 +14,9 @@ import threading
 panels:         list = []   # [{sector, stocks, id, page, height, mode}, ...]
 all_symbols:    list = []   # all non-global symbols (NSE + BSE)
 global_symbols: list = []   # raw yfinance tickers: ^DJI, GC=F, CL=F …
-bse_symbols:    list = []   # DEPRECATED – kept for backward compat
 bse_override:   set  = set()  # symbols to fetch via .BO (subset of all_symbols)
 dead_symbols:   dict = {}   # symbol → miss count; persisted in DB
+panels_lock = threading.Lock()  # guards mutations to panels, all_symbols, global_symbols, bse_override
 
 # ─── Caches & locks ───────────────────────────────────────────────────────
 price_cache:   dict = {}

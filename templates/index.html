@@ -324,9 +324,7 @@ function gotoPage(p){
                 currentPage=newCur; location.hash='#'+newCur;
                 gotoPage(newCur);
               }
-            }).catch(()=>{});
-        });
-      })();
+            }).catch(e=>console.error('page reorder failed:',e));
 
       const b=document.createElement('button');
       b.className=`page-btn${i===p?' active':''}`;
@@ -351,7 +349,7 @@ function gotoPage(p){
             if(committed) return; committed=true;
             const name=inp.value.trim();
             if(name) pageNames[String(pg)]=name; else delete pageNames[String(pg)];
-            fetch(`/api/page/${pg}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(()=>{});
+            fetch(`/api/page/${pg}/rename`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).catch(e=>console.error('page rename failed:',e));
             if(inp.parentNode===wrap) wrap.replaceChild(b, inp);
             b.textContent=name||`PAGE ${pg+1}`;
           };
@@ -383,7 +381,7 @@ function gotoPage(p){
           // Just reassign page — no array splicing needed
           if(panelData[from]) panelData[from].page=pg;
           totalPages=Math.max(totalPages, pg+1);
-          fetch(`/api/panel/${from}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:pg})}).catch(()=>{});
+          fetch(`/api/panel/${from}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:pg})}).catch(e=>console.error('setpage failed:',e));
           gotoPage(pg);
         });
       })();
@@ -565,7 +563,7 @@ function onDrop(e, pi){
     updatePanel(fromPi, srcPanel.stocks);
     updatePanel(pi,     dstPanel.stocks);
     fetch('/api/symbol/move',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from_pi:fromPi, to_pi:pi, symbol})}).catch(()=>{});
+      body:JSON.stringify({from_pi:fromPi, to_pi:pi, symbol})}).catch(e=>console.error('symbol move failed:',e));
     return;
   }
   const from=dragSrcPi;
@@ -575,7 +573,7 @@ function onDrop(e, pi){
   const moved=panelData.splice(from, 1)[0];
   panelData.splice(pi, 0, moved);
   rebuildGrid();
-  fetch('/api/panel/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from, to:pi})}).catch(()=>{});
+  fetch('/api/panel/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from, to:pi})}).catch(e=>console.error('panel move failed:',e));
 }
 function onDragEnd(){
   _clearDragState();
@@ -688,7 +686,7 @@ function moveWidgetToPage(pi, targetPage){
   if(!panelData[pi]) return;
   panelData[pi].page = targetPage;
   totalPages = Math.max(totalPages, targetPage + 1);
-  fetch(`/api/panel/${pi}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:targetPage})}).catch(()=>{});
+  fetch(`/api/panel/${pi}/setpage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:targetPage})}).catch(e=>console.error('setpage failed:',e));
   gotoPage(targetPage);
 }
 
@@ -792,7 +790,7 @@ async function resizeWidget(pi, delta){
   panelData[pi].height=h;
   const w=document.getElementById(`w-${pi}`);
   if(w) w.style.gridRow=h>1?`span ${h}`:'';
-  fetch(`/api/panel/${pi}/setheight`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({height:h})}).catch(()=>{});
+  fetch(`/api/panel/${pi}/setheight`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({height:h})}).catch(e=>console.error('setheight failed:',e));
 }
 
 // ── UPDATE PANEL ─────────────────────────────────────────────
@@ -951,7 +949,7 @@ function updateTicker(panels){
 
 // ── FORCE REFRESH ────────────────────────────────────────────
 function forceRefresh(){
-  fetch('/api/refresh',{method:'POST'}).catch(()=>{});
+  fetch('/api/refresh',{method:'POST'}).catch(e=>console.error('refresh failed:',e));
   const el=document.getElementById('data-age'); if(el)el.textContent='REFRESHING…';
 }
 
@@ -993,6 +991,10 @@ async function poll(){
         // Panel set actually changed (add/delete) — full replace, preserve sort via id
         panelData = incoming;
         panelData.forEach(p=>{ if(p.height===undefined) p.height=1; });
+        // Prune orphaned sort-state keys for panels that no longer exist
+        const liveIds = new Set(incoming.map(p=>p.id).filter(Boolean));
+        Object.keys(panelSort).forEach(k=>{ if(!liveIds.has(k)){ delete panelSort[k]; } });
+        _saveSort();
       }
     }
     const maxPg=panelData.reduce((m,p)=>Math.max(m,(p.page||0)+1),0)||1;
@@ -1083,7 +1085,7 @@ function _ctxOpenTV(){
 function _ctxCopy(){
   if(_ctxSym===null) return;
   const sym=_ctxSym; _ctxHide();
-  navigator.clipboard?.writeText(sym).catch(()=>{});
+  navigator.clipboard?.writeText(sym).catch(()=>{}); // clipboard errors are always silent
 }
 
 poll();

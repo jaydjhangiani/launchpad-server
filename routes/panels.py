@@ -61,20 +61,23 @@ def api_add_ticker(pi: int):
             cached = result.get(symbol, {})
 
     new_stock = {"symbol": symbol, "name": symbol}
-    state.panels[pi]["stocks"].append(new_stock)
 
-    if mode == "global":
-        if symbol not in state.global_symbols:
-            state.global_symbols.append(symbol)
-    else:
-        if symbol not in state.all_symbols:
-            state.all_symbols.append(symbol)
-        if is_bse:
-            state.bse_override.add(symbol)
-        else:
-            state.bse_override.discard(symbol)
-
+    # Write to DB first — if this fails the route returns an error and state
+    # is never touched, so DB and in-memory state remain consistent.
     _db_add_stock(state.panels[pi]["id"], symbol, symbol)
+
+    state.panels[pi]["stocks"].append(new_stock)
+    with state.panels_lock:
+        if mode == "global":
+            if symbol not in state.global_symbols:
+                state.global_symbols.append(symbol)
+        else:
+            if symbol not in state.all_symbols:
+                state.all_symbols.append(symbol)
+            if is_bse:
+                state.bse_override.add(symbol)
+            else:
+                state.bse_override.discard(symbol)
 
     pdata = cached
     return jsonify({
@@ -93,8 +96,8 @@ def api_rename_panel(pi: int):
     name = (body.get("name") or "").strip()
     if not name or len(name) > 60:
         return jsonify({"error": "Invalid name"}), 400
-    state.panels[pi]["sector"] = name
     _db_rename_panel(state.panels[pi]["id"], name)
+    state.panels[pi]["sector"] = name
     return jsonify({"status": "ok", "sector": name})
 
 
@@ -106,8 +109,8 @@ def api_remove_ticker(pi: int):
     symbol = (body.get("symbol") or "").strip().upper()
     if not symbol:
         return jsonify({"error": "No symbol provided"}), 400
-    state.panels[pi]["stocks"] = [s for s in state.panels[pi]["stocks"] if s["symbol"] != symbol]
     _db_remove_stock(state.panels[pi]["id"], symbol)
+    state.panels[pi]["stocks"] = [s for s in state.panels[pi]["stocks"] if s["symbol"] != symbol]
     return jsonify({"status": "ok", "removed": symbol})
 
 
@@ -131,25 +134,27 @@ def api_edit_ticker(pi: int):
     if new_symbol in existing:
         return jsonify({"error": f"{new_symbol} is already in this panel"}), 409
 
+    mode = state.panels[pi].get("mode", "nse")
+
+    _db_rename_stock(state.panels[pi]["id"], old_symbol, new_symbol)
+
     for s in state.panels[pi]["stocks"]:
         if s["symbol"] == old_symbol:
             s["symbol"] = new_symbol
             s["name"]   = new_symbol
             break
 
-    mode = state.panels[pi].get("mode", "nse")
-    sym_list = state.global_symbols if mode == "global" else state.all_symbols
-    if old_symbol in sym_list and new_symbol not in sym_list:
-        sym_list[sym_list.index(old_symbol)] = new_symbol
-    elif new_symbol not in sym_list:
-        sym_list.append(new_symbol)
+    with state.panels_lock:
+        sym_list = state.global_symbols if mode == "global" else state.all_symbols
+        if old_symbol in sym_list and new_symbol not in sym_list:
+            sym_list[sym_list.index(old_symbol)] = new_symbol
+        elif new_symbol not in sym_list:
+            sym_list.append(new_symbol)
 
-    if old_symbol in state.bse_override:
-        state.bse_override.discard(old_symbol)
-        if mode == "bse":
-            state.bse_override.add(new_symbol)
-
-    _db_rename_stock(state.panels[pi]["id"], old_symbol, new_symbol)
+        if old_symbol in state.bse_override:
+            state.bse_override.discard(old_symbol)
+            if mode == "bse":
+                state.bse_override.add(new_symbol)
 
     if mode == "global":
         fetcher = fetch_global_batch
@@ -199,23 +204,26 @@ def api_delete_panel(pi: int):
     """Permanently delete a panel (any mode)."""
     if pi < 0 or pi >= len(state.panels):
         return jsonify({"error": "Invalid panel index"}), 400
-    panel = state.panels.pop(pi)
+    panel = state.panels[pi]   # peek before pop
     pid   = panel["id"]
+
+    # DB delete first (FK cascade removes panel_stocks automatically)
+    _db_delete_panel(pid)
+    state.panels.pop(pi)
 
     still_used: set = set()
     for p in state.panels:
         for s in p.get("stocks", []):
             still_used.add(s["symbol"])
 
-    if panel.get("mode") == "global":
-        state.global_symbols[:] = [s for s in state.global_symbols if s in still_used]
-    else:
-        state.all_symbols[:] = [s for s in state.all_symbols if s in still_used]
-        for s in list(state.bse_override):
-            if s not in still_used:
-                state.bse_override.discard(s)
-
-    _db_delete_panel(pid)
+    with state.panels_lock:
+        if panel.get("mode") == "global":
+            state.global_symbols[:] = [s for s in state.global_symbols if s in still_used]
+        else:
+            state.all_symbols[:] = [s for s in state.all_symbols if s in still_used]
+            for s in list(state.bse_override):
+                if s not in still_used:
+                    state.bse_override.discard(s)
     return jsonify({"status": "ok", "deleted": pid})
 
 

@@ -311,17 +311,22 @@ def update_all_prices() -> None:
 # ─── Background price thread ──────────────────────────────────────────────
 
 def background_updater() -> None:
-    """Runs forever: initial fetch then refresh every FETCH_INTERVAL seconds."""
+    """Runs forever: initial fetch then refresh every FETCH_INTERVAL seconds.
+    Exceptions inside update_all_prices() are caught and logged so the thread
+    never dies silently.
+    """
     _load_price_cache()
     _load_bse_override()
     with state.cache_lock:
         if state.price_cache and state.last_fetch_time == 0:
             state.last_fetch_time = time.time() - state.FETCH_INTERVAL
             state.last_good_fetch_time = state.last_fetch_time
-    update_all_prices()
     while True:
+        try:
+            update_all_prices()
+        except Exception as e:
+            print(f"[ERROR] background_updater crashed: {e} — continuing in {state.FETCH_INTERVAL}s")
         time.sleep(state.FETCH_INTERVAL)
-        update_all_prices()
 
 
 # ─── Market-cap fetcher ───────────────────────────────────────────────────
@@ -362,8 +367,13 @@ def fetch_mktcap_all() -> None:
 
 
 def mktcap_updater() -> None:
+    """Runs forever: initial fetch then refresh every 6 hours.
+    Exceptions are caught and logged so the thread never dies silently.
+    """
     _load_mktcap_cache()
-    fetch_mktcap_all()
     while True:
+        try:
+            fetch_mktcap_all()
+        except Exception as e:
+            print(f"[ERROR] mktcap_updater crashed: {e} — continuing in 6h")
         time.sleep(6 * 3600)
-        fetch_mktcap_all()

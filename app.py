@@ -7,6 +7,7 @@ NeonDB, registers route blueprints, and starts background threads.
 No local customisation files — NeonDB is the single source of truth.
 """
 
+import sys
 import threading
 
 from flask import Flask
@@ -22,8 +23,13 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 # ---------------------------------------------------------------------------
 # DATABASE INIT & PANEL LOADING
 # ---------------------------------------------------------------------------
-_init_db()
-_db_panels = _load_panels_from_db()
+try:
+    _init_db()
+    _db_panels = _load_panels_from_db()
+except Exception as _e:
+    print(f"[FATAL] Cannot connect to database: {_e}", file=sys.stderr)
+    print("[FATAL] Check DATABASE_URL in .env and ensure NeonDB is reachable.", file=sys.stderr)
+    sys.exit(1)
 
 _persisted_dead = _load_dead_symbols_from_db()
 if _persisted_dead:
