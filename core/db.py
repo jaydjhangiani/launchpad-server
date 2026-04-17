@@ -1,7 +1,6 @@
 """SQLite helpers: connection, schema creation, panel/stock/dead-symbol queries."""
 
 import os
-import json
 import sqlite3
 
 DB_FILE = "launchpad.db"
@@ -12,7 +11,7 @@ def _db_connect():
 
 
 def _init_db() -> None:
-    """Create DB tables. On first run populates panels + panel_stocks from sheet_data.json."""
+    """Create DB tables if they don't exist."""
     con = _db_connect()
     con.execute("""
         CREATE TABLE IF NOT EXISTS panels (
@@ -36,22 +35,6 @@ def _init_db() -> None:
         )
     """)
     con.commit()
-    if con.execute("SELECT COUNT(*) FROM panel_stocks").fetchone()[0] == 0:
-        if os.path.exists("sheet_data.json"):
-            with open("sheet_data.json") as _fh:
-                _jdata = json.load(_fh)
-            _rows = []
-            for _pid, _stocks in _jdata.items():
-                for _s in _stocks:
-                    _rows.append((_pid, _s["symbol"], _s.get("name", _s["symbol"])))
-            con.executemany(
-                "INSERT OR IGNORE INTO panel_stocks (panel_id, symbol, name) VALUES (?,?,?)",
-                _rows
-            )
-            con.commit()
-            print(f"[DB] Migrated sheet_data.json → {DB_FILE} ({len(_rows)} rows)")
-        else:
-            print("[DB] WARNING: launchpad.db is empty and no sheet_data.json found.")
     con.close()
 
 

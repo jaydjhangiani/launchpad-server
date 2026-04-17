@@ -9,10 +9,9 @@ starts background threads.
 
 import json
 import os
-import secrets
 import threading
 
-from flask import Flask, make_response, request
+from flask import Flask
 
 import state
 from core.db import _init_db, _load_panels_from_db, _load_dead_symbols_from_db
@@ -21,34 +20,6 @@ from core.fetcher import background_updater, mktcap_updater
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-
-# ---------------------------------------------------------------------------
-# BASIC AUTH  — set a password via env var LAUNCHPAD_PASSWORD before starting
-# e.g.  $env:LAUNCHPAD_PASSWORD="mysecret" ; python app.py
-# Leave unset / empty to disable auth (safe for localhost-only use)
-# ---------------------------------------------------------------------------
-_AUTH_PASSWORD = os.environ.get("LAUNCHPAD_PASSWORD", "").strip()
-_AUTH_USER     = os.environ.get("LAUNCHPAD_USER", "launchpad").strip()
-
-
-def _check_auth(username: str, password: str) -> bool:
-    """Constant-time compare to avoid timing attacks."""
-    if not _AUTH_PASSWORD:
-        return True
-    ok_user = secrets.compare_digest(username.encode(), _AUTH_USER.encode())
-    ok_pass = secrets.compare_digest(password.encode(), _AUTH_PASSWORD.encode())
-    return ok_user and ok_pass
-
-
-@app.before_request
-def _global_auth():
-    if not _AUTH_PASSWORD:
-        return
-    auth = request.authorization
-    if not auth or not _check_auth(auth.username, auth.password):
-        resp = make_response("Authentication required", 401)
-        resp.headers["WWW-Authenticate"] = 'Basic realm="Launchpad"'
-        return resp
 
 
 # ---------------------------------------------------------------------------
