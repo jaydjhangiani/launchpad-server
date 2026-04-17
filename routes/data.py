@@ -104,3 +104,16 @@ def api_refresh():
     t = threading.Thread(target=update_all_prices, daemon=True)
     t.start()
     return jsonify({"status": "refresh triggered"})
+
+
+@bp.route("/api/health")
+def api_health():
+    """Lightweight liveness check — returns 200 as long as the server is up."""
+    with state.cache_lock:
+        fetch_age = round(time.time() - state.last_fetch_time) if state.last_fetch_time else None
+    return jsonify({
+        "status":      "ok",
+        "panels":      len(state.panels),
+        "symbols":     len(state.all_symbols) + len(state.global_symbols),
+        "fetch_age_s": fetch_age,
+    })
