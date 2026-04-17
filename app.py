@@ -408,6 +408,39 @@ del _init_customs
 
 
 # ---------------------------------------------------------------------------
+# BSE OVERRIDE PERSISTENCE
+# Symbols that fail NSE but succeed on BSE are cached here so on the next
+# restart they go straight to the BSE path without triggering NSE errors.
+# ---------------------------------------------------------------------------
+BSE_OVERRIDE_FILE = "bse_override.json"
+
+
+def _load_bse_override() -> None:
+    """Restore persisted bse_override symbols (filtered to current all_symbols)."""
+    if not os.path.exists(BSE_OVERRIDE_FILE):
+        return
+    try:
+        with open(BSE_OVERRIDE_FILE) as fh:
+            saved = set(json.load(fh))
+        # Only restore symbols that are still in the active symbol list
+        restored = saved & set(all_symbols)
+        bse_override.update(restored)
+        if restored:
+            print(f"[INIT] Restored {len(restored)} BSE-override symbols from disk")
+    except Exception as e:
+        print(f"[WARN] Could not load bse_override cache: {e}")
+
+
+def _save_bse_override() -> None:
+    """Persist current bse_override set to disk."""
+    try:
+        with open(BSE_OVERRIDE_FILE, "w") as fh:
+            json.dump(sorted(bse_override), fh)
+    except Exception as e:
+        print(f"[WARN] Could not save bse_override cache: {e}")
+
+
+# ---------------------------------------------------------------------------
 # PRICE CACHE  (+ disk persistence for instant reload)
 # ---------------------------------------------------------------------------
 PRICE_CACHE_FILE = "price_cache.json"
@@ -796,7 +829,8 @@ def update_all_prices() -> None:
         if new_prices:          # only mark a good fetch when we actually got data
             last_good_fetch_time = last_fetch_time
 
-    _save_price_cache()   # persist to disk for instant reload on next restart
+    _save_price_cache()      # persist to disk for instant reload on next restart
+    _save_bse_override()     # persist BSE-override set so next restart skips NSE errors
 
     elapsed = round(time.time() - t0, 1)
     status  = f"Updated {len(new_prices)} prices" if new_prices else "NO DATA (network/rate-limit?)"
@@ -806,6 +840,7 @@ def update_all_prices() -> None:
 def background_updater() -> None:
     """Runs forever: initial fetch then refresh every FETCH_INTERVAL seconds."""
     _load_price_cache()      # <-- immediately serve stale-but-valid prices from last run
+    _load_bse_override()     # restore BSE-override set so cycle 1 skips redundant NSE attempts
     global last_fetch_time
     # Mark last_fetch_time as "old" so UI shows stale indicator, not null
     with cache_lock:
