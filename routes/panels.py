@@ -5,7 +5,8 @@ import time
 from flask import Blueprint, jsonify, request
 
 import state
-from core.customizations import _load_customs, _save_customs, _save_sheet_data
+from core.customizations import _load_customs, _save_customs
+from core.db import _db_add_stock, _db_remove_stock, _db_rename_stock, _db_rename_panel, _db_move_stock
 from core.fetcher import fetch_symbols_batch, fetch_bse_batch, fetch_global_batch
 
 bp = Blueprint("panels", __name__)
@@ -73,17 +74,15 @@ def api_add_ticker(pi: int):
             state.bse_override.discard(symbol)
 
     pk = state.panels[pi]["id"]
-    if pk in state.raw_sheet_data:
-        if not any(s["symbol"] == symbol for s in state.raw_sheet_data[pk]):
-            state.raw_sheet_data[pk].append({"symbol": symbol, "name": symbol})
-            _save_sheet_data()
-    else:
+    if pk.startswith("_uc_"):
         customs = _load_customs()
         customs.setdefault(pk, {"added": [], "removed": []})
         if not any(s["symbol"] == symbol for s in customs[pk].get("added", [])):
             customs[pk].setdefault("added", []).append(new_stock)
         customs[pk]["removed"] = [s for s in customs[pk].get("removed", []) if s != symbol]
         _save_customs(customs)
+    else:
+        _db_add_stock(pk, symbol, symbol)
 
     pdata = cached
     return jsonify({
@@ -103,11 +102,14 @@ def api_rename_panel(pi: int):
     if not name or len(name) > 60:
         return jsonify({"error": "Invalid name"}), 400
     state.panels[pi]["sector"] = name
-    customs = _load_customs()
     pk = state.panels[pi]["id"]
-    customs.setdefault(pk, {"added": [], "removed": []})
-    customs[pk]["sector_name"] = name
-    _save_customs(customs)
+    if pk.startswith("_uc_"):
+        customs = _load_customs()
+        customs.setdefault(pk, {"added": [], "removed": []})
+        customs[pk]["sector_name"] = name
+        _save_customs(customs)
+    else:
+        _db_rename_panel(pk, name)
     return jsonify({"status": "ok", "sector": name})
 
 
@@ -121,16 +123,15 @@ def api_remove_ticker(pi: int):
         return jsonify({"error": "No symbol provided"}), 400
     state.panels[pi]["stocks"] = [s for s in state.panels[pi]["stocks"] if s["symbol"] != symbol]
     pk = state.panels[pi]["id"]
-    if pk in state.raw_sheet_data:
-        state.raw_sheet_data[pk] = [s for s in state.raw_sheet_data[pk] if s["symbol"] != symbol]
-        _save_sheet_data()
-    else:
+    if pk.startswith("_uc_"):
         customs = _load_customs()
         customs.setdefault(pk, {"added": [], "removed": []})
         if symbol not in customs[pk].get("removed", []):
             customs[pk].setdefault("removed", []).append(symbol)
         customs[pk]["added"] = [s for s in customs[pk].get("added", []) if s["symbol"] != symbol]
         _save_customs(customs)
+    else:
+        _db_remove_stock(pk, symbol)
     return jsonify({"status": "ok", "removed": symbol})
 
 
@@ -173,19 +174,7 @@ def api_edit_ticker(pi: int):
             state.bse_override.add(new_symbol)
 
     pk = state.panels[pi]["id"]
-    if pk in state.raw_sheet_data:
-        for s in state.raw_sheet_data[pk]:
-            if s["symbol"] == old_symbol:
-                s["symbol"] = new_symbol
-                s["name"]   = new_symbol
-        if not any(s["symbol"] == new_symbol for s in state.raw_sheet_data[pk]):
-            state.raw_sheet_data[pk].append({"symbol": new_symbol, "name": new_symbol})
-        state.raw_sheet_data[pk] = [
-            s for s in state.raw_sheet_data[pk]
-            if s["symbol"] != old_symbol or s["symbol"] == new_symbol
-        ]
-        _save_sheet_data()
-    else:
+    if pk.startswith("_uc_"):
         customs = _load_customs()
         customs.setdefault(pk, {"added": [], "removed": []})
         for s in customs[pk].get("added", []):
@@ -198,6 +187,8 @@ def api_edit_ticker(pi: int):
             customs[pk].setdefault("removed", []).append(old_symbol)
         customs[pk]["removed"] = [s for s in customs[pk]["removed"] if s != new_symbol]
         _save_customs(customs)
+    else:
+        _db_rename_stock(pk, old_symbol, new_symbol)
 
     if mode == "global":
         fetcher = fetch_global_batch
@@ -320,34 +311,43 @@ def api_move_symbol():
     src["stocks"] = [s for s in src["stocks"] if s["symbol"] != symbol]
     dst["stocks"].append(stock)
 
-    src_pk  = src["id"]
-    dst_pk  = dst["id"]
-    changed = False
-    if src_pk in state.raw_sheet_data:
-        state.raw_sheet_data[src_pk] = [s for s in state.raw_sheet_data[src_pk] if s["symbol"] != symbol]
-        changed = True
-    if dst_pk in state.raw_sheet_data:
-        if not any(s["symbol"] == symbol for s in state.raw_sheet_data[dst_pk]):
-            state.raw_sheet_data[dst_pk].append({"symbol": symbol, "name": stock.get("name", symbol)})
-            changed = True
-    if changed:
-        _save_sheet_data()
+    src_pk = src["id"]
+    dst_pk = dst["id"]
+    name   = stock.get("name", symbol)
 
-    if src_pk not in state.raw_sheet_data or dst_pk not in state.raw_sheet_data:
+    src_is_uc = src_pk.startswith("_uc_")
+    dst_is_uc = dst_pk.startswith("_uc_")
+
+    if not src_is_uc and not dst_is_uc:
+        _db_move_stock(src_pk, dst_pk, symbol, name)
+    elif not src_is_uc:
+        _db_remove_stock(src_pk, symbol)
         customs = _load_customs()
-        if src_pk not in state.raw_sheet_data:
-            customs.setdefault(src_pk, {"added": [], "removed": []})
-            customs[src_pk]["added"] = [s for s in customs[src_pk].get("added", []) if s["symbol"] != symbol]
-            if symbol not in customs[src_pk].get("removed", []):
-                customs[src_pk].setdefault("removed", []).append(symbol)
-        if dst_pk not in state.raw_sheet_data:
-            customs.setdefault(dst_pk, {"added": [], "removed": []})
-            if not any(s["symbol"] == symbol for s in customs[dst_pk].get("added", [])):
-                customs[dst_pk].setdefault("added", []).append(
-                    {"symbol": symbol, "name": stock.get("name", symbol)}
-                )
-            customs[dst_pk]["removed"] = [s for s in customs[dst_pk].get("removed", []) if s != symbol]
+        customs.setdefault(dst_pk, {"added": [], "removed": []})
+        if not any(s["symbol"] == symbol for s in customs[dst_pk].get("added", [])):
+            customs[dst_pk].setdefault("added", []).append({"symbol": symbol, "name": name})
+        customs[dst_pk]["removed"] = [s for s in customs[dst_pk].get("removed", []) if s != symbol]
         _save_customs(customs)
+    elif not dst_is_uc:
+        _db_add_stock(dst_pk, symbol, name)
+        customs = _load_customs()
+        customs.setdefault(src_pk, {"added": [], "removed": []})
+        customs[src_pk]["added"] = [s for s in customs[src_pk].get("added", []) if s["symbol"] != symbol]
+        if symbol not in customs[src_pk].get("removed", []):
+            customs[src_pk].setdefault("removed", []).append(symbol)
+        _save_customs(customs)
+    else:
+        customs = _load_customs()
+        customs.setdefault(src_pk, {"added": [], "removed": []})
+        customs[src_pk]["added"] = [s for s in customs[src_pk].get("added", []) if s["symbol"] != symbol]
+        if symbol not in customs[src_pk].get("removed", []):
+            customs[src_pk].setdefault("removed", []).append(symbol)
+        customs.setdefault(dst_pk, {"added": [], "removed": []})
+        if not any(s["symbol"] == symbol for s in customs[dst_pk].get("added", [])):
+            customs[dst_pk].setdefault("added", []).append({"symbol": symbol, "name": name})
+        customs[dst_pk]["removed"] = [s for s in customs[dst_pk].get("removed", []) if s != symbol]
+        _save_customs(customs)
+
     return jsonify({"status": "ok", "symbol": symbol, "from": from_pi, "to": to_pi})
 
 

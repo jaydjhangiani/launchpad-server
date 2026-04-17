@@ -104,3 +104,89 @@ def _db_clear_dead(symbol: str) -> None:
     con.commit()
     cur.close()
     con.close()
+
+
+# ---------------------------------------------------------------------------
+# Stock mutation helpers — direct writes, no in-memory mirror needed
+# ---------------------------------------------------------------------------
+
+def _db_add_stock(panel_id: str, symbol: str, name: str) -> None:
+    """Append a stock to panel_stocks (no-op if already present)."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "SELECT COALESCE(MAX(stock_order), -1) + 1 FROM panel_stocks WHERE panel_id = %s",
+        (panel_id,),
+    )
+    next_order = cur.fetchone()[0]
+    cur.execute(
+        "INSERT INTO panel_stocks (panel_id, symbol, name, stock_order) VALUES (%s, %s, %s, %s) "
+        "ON CONFLICT (panel_id, symbol) DO NOTHING",
+        (panel_id, symbol, name, next_order),
+    )
+    con.commit()
+    cur.close()
+    con.close()
+
+
+def _db_remove_stock(panel_id: str, symbol: str) -> None:
+    """Delete a stock from panel_stocks."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "DELETE FROM panel_stocks WHERE panel_id = %s AND symbol = %s",
+        (panel_id, symbol),
+    )
+    con.commit()
+    cur.close()
+    con.close()
+
+
+def _db_rename_stock(panel_id: str, old_symbol: str, new_symbol: str) -> None:
+    """Rename a stock symbol in-place within a panel."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "UPDATE panel_stocks SET symbol = %s, name = %s "
+        "WHERE panel_id = %s AND symbol = %s",
+        (new_symbol, new_symbol, panel_id, old_symbol),
+    )
+    con.commit()
+    cur.close()
+    con.close()
+
+
+def _db_rename_panel(panel_id: str, new_name: str) -> None:
+    """Update sector_name for a panel."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "UPDATE panels SET sector_name = %s WHERE panel_id = %s",
+        (new_name, panel_id),
+    )
+    con.commit()
+    cur.close()
+    con.close()
+
+
+def _db_move_stock(src_panel_id: str, dst_panel_id: str, symbol: str, name: str) -> None:
+    """Move a stock from one DB panel to another atomically."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "DELETE FROM panel_stocks WHERE panel_id = %s AND symbol = %s",
+        (src_panel_id, symbol),
+    )
+    cur.execute(
+        "SELECT COALESCE(MAX(stock_order), -1) + 1 FROM panel_stocks WHERE panel_id = %s",
+        (dst_panel_id,),
+    )
+    next_order = cur.fetchone()[0]
+    cur.execute(
+        "INSERT INTO panel_stocks (panel_id, symbol, name, stock_order) VALUES (%s, %s, %s, %s) "
+        "ON CONFLICT (panel_id, symbol) DO NOTHING",
+        (dst_panel_id, symbol, name, next_order),
+    )
+    con.commit()
+    cur.close()
+    con.close()

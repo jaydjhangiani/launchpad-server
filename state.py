@@ -17,7 +17,6 @@ global_symbols: list = []   # raw yfinance tickers: ^DJI, GC=F, CL=F …
 bse_symbols:    list = []   # DEPRECATED – kept for backward compat
 bse_override:   set  = set()  # symbols to fetch via .BO (subset of all_symbols)
 dead_symbols:   dict = {}   # symbol → miss count; persisted in DB
-raw_sheet_data: dict = {}   # {panel_id: [{symbol, name}]}
 
 # ─── Caches & locks ───────────────────────────────────────────────────────
 price_cache:   dict = {}

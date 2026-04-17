@@ -26,8 +26,6 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 _init_db()
 _db_panels = _load_panels_from_db()
 
-# raw_sheet_data: {panel_id: [{symbol, name}]} — used by _save_sheet_data / migration
-state.raw_sheet_data.update({p["panel_id"]: p["stocks"] for p in _db_panels})
 _persisted_dead = _load_dead_symbols_from_db()
 if _persisted_dead:
     print(f"[DB] Loaded {len(_persisted_dead)} persisted dead symbols — skipping on fetch")
@@ -60,11 +58,10 @@ print(f"[INIT] {len(state.panels)} panels, {len(state.all_symbols)} unique symbo
 _init_customs = _load_customs()
 
 # Pass 1: apply per-panel customisations to DB-sourced panels.
-# For panels that live in the database (raw_sheet_data), the DB is the sole
-# source of truth for which stocks are present — only sector_name and mode
-# overrides are read from user_customizations.json.
-# removed/added from user_customizations.json are only applied to
-# user-created panels (handled in Pass 2).
+# For DB panels the database is the sole source of truth for stock lists —
+# only sector_name and mode overrides are read from user_customizations.json.
+# removed/added from user_customizations.json apply only to user-created
+# panels (identified by the "_uc_" id prefix), handled in Pass 2.
 for _panel in state.panels:
     _cust = _init_customs.get(_panel["id"], {})
     if _cust.get("sector_name"):
