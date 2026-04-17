@@ -35,3 +35,6 @@ Thumbs.db
 blp work.xlsx
 *.xlsx
 *.xls
+
+# Legacy — replaced by launchpad.db
+sheet_data.json
