@@ -229,6 +229,24 @@ def _db_move_stock(src_panel_id: str, dst_panel_id: str, symbol: str, name: str)
 # Panel lifecycle helpers
 # ---------------------------------------------------------------------------
 
+def _db_next_panel_id() -> str:
+    """Return the next sequential panel ID (Sheet N+1)."""
+    con = _db_connect()
+    cur = con.cursor()
+    cur.execute(
+        "SELECT panel_id FROM panels WHERE panel_id ~ '^Sheet [0-9]+$'"
+    )
+    nums = []
+    for (pid,) in cur.fetchall():
+        try:
+            nums.append(int(pid.split()[1]))
+        except (IndexError, ValueError):
+            pass
+    cur.close()
+    con.close()
+    return f"Sheet {max(nums, default=0) + 1}"
+
+
 def _db_create_panel(panel_id: str, sector_name: str, mode: str,
                      display_order: int, page: int) -> None:
     """Insert a new panel row."""

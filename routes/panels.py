@@ -1,14 +1,12 @@
 """Blueprint: all panel and symbol management routes."""
 
-import time
-
 from flask import Blueprint, jsonify, request
 
 import state
 from core.db import (
     _db_add_stock, _db_remove_stock, _db_rename_stock, _db_rename_panel, _db_move_stock,
     _db_create_panel, _db_delete_panel, _db_update_display_orders,
-    _db_set_panel_page, _db_set_panel_height,
+    _db_set_panel_page, _db_set_panel_height, _db_next_panel_id,
 )
 from core.fetcher import fetch_symbols_batch, fetch_bse_batch, fetch_global_batch
 
@@ -187,7 +185,7 @@ def api_new_panel():
         max((p.get("page", j // state.PAGE_SIZE) for j, p in enumerate(state.panels)), default=0)
         if state.panels else 0
     )
-    panel_id      = f"_uc_{int(time.time() * 1000)}"
+    panel_id      = _db_next_panel_id()
     display_order = len(state.panels)
     _db_create_panel(panel_id, name, mode, display_order, target_pg)
     new_panel = {"sector": name, "stocks": [], "id": panel_id, "page": target_pg, "mode": mode, "height": 1}
