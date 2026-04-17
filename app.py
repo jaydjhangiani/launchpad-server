@@ -45,45 +45,9 @@ def _global_auth():
         return resp
 
 # ---------------------------------------------------------------------------
-# SECTOR → SHEET MAPPING  (all 26 sheets, 3 pages of 4×3 = 9 panels each,
-#                          last page has 8)
-# ---------------------------------------------------------------------------
-PANEL_CONFIG = [
-    # Page 1  (indices 0-8)
-    ("Brokerages",               "Sheet 1"),
-    ("PSU Banks",                "Sheet2"),
-    ("Capital Markets",          "Sheet 3"),
-    ("Insurance & Wealth",       "Sheet 4"),
-    ("NBFC & Housing Finance",   "Sheet 5"),
-    ("Private Banks",            "Sheet 6"),
-    ("Information Technology",   "Sheet 7"),
-    ("Consumer & FMCG",          "Sheet 8"),
-    ("Diversified / Conglom.",   "Sheet 9"),
-    # Page 2  (indices 9-17)
-    ("Pharmaceuticals",          " Sheet 10"),
-    ("Automobiles",              "Sheet 11"),
-    ("Industrials & Materials",  "Sheet 12"),
-    ("Oil & Gas",                "Sheet 13"),
-    ("Power & Energy",           "Sheet 14"),
-    ("Auto Components",          "Sheet 15"),
-    ("Cement",                   "Sheet 16"),
-    ("Media & Entertainment",    "Sheet 17"),
-    ("Real Estate",              "Sheet 18"),
-    # Page 3  (indices 18-25)
-    ("Telecom",                  "Sheet 19"),
-    ("Metals & Mining",          "Sheet 20"),
-    ("Paper & Packaging",        "Sheet 21"),
-    ("Logistics & Shipping",     "Sheet 22"),
-    ("Agrochem & Fertilisers",   "Sheet 23"),
-    ("Speciality Chemicals",     "Sheet 24"),
-    ("Hotels & Hospitality",     "Sheet 25"),
-    ("Textiles",                 "Sheet 26"),
-]
-
-# ---------------------------------------------------------------------------
 # SECTOR / SYMBOL DATABASE  (SQLite)
-# All sector panel stock lists are stored in launchpad.db.
-# On first run the database is auto-populated from sheet_data.json if present.
+# All sector panel data and stock lists are stored in launchpad.db.
+# The database is the single source of truth — no hardcoded sector lists.
 # ---------------------------------------------------------------------------
 DB_FILE = "launchpad.db"
 
@@ -93,14 +57,27 @@ def _db_connect():
 
 
 def _init_db() -> None:
-    """Create the panel_stocks table. Migrate from sheet_data.json if the DB is empty."""
+    """Create DB tables. On first run populates panels + panel_stocks from sheet_data.json."""
     con = _db_connect()
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS panels (
+            panel_id      TEXT PRIMARY KEY,
+            sector_name   TEXT NOT NULL,
+            display_order INTEGER NOT NULL DEFAULT 0
+        )
+    """)
     con.execute("""
         CREATE TABLE IF NOT EXISTS panel_stocks (
             panel_id TEXT NOT NULL,
             symbol   TEXT NOT NULL,
             name     TEXT,
             PRIMARY KEY (panel_id, symbol)
+        )
+    """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS dead_symbols (
+            symbol TEXT PRIMARY KEY,
+            misses INTEGER NOT NULL DEFAULT 0
         )
     """)
     con.commit()
@@ -123,58 +100,96 @@ def _init_db() -> None:
     con.close()
 
 
-def _load_sheet_data_from_db() -> dict:
-    """Return all panel stocks as {panel_id: [{symbol, name}, ...]}."""
+def _load_panels_from_db() -> list:
+    """Return [{panel_id, sector_name, stocks:[{symbol,name}]}, ...] ordered by display_order."""
     con = _db_connect()
-    rows = con.execute(
+    panel_rows = con.execute(
+        "SELECT panel_id, sector_name FROM panels ORDER BY display_order"
+    ).fetchall()
+    stock_rows = con.execute(
         "SELECT panel_id, symbol, name FROM panel_stocks ORDER BY rowid"
     ).fetchall()
     con.close()
-    data: dict = {}
-    for panel_id, symbol, name in rows:
-        data.setdefault(panel_id, []).append({"symbol": symbol, "name": name or symbol})
-    return data
+    stocks_by_panel: dict = {}
+    for pid, sym, name in stock_rows:
+        # Strip exchange suffixes that may have crept in historically
+        clean = sym
+        if clean.upper().endswith(".BO"):  clean = clean[:-3]
+        elif clean.upper().endswith(".NS"): clean = clean[:-3]
+        stocks_by_panel.setdefault(pid, []).append({"symbol": clean, "name": name or clean})
+    result = []
+    for pid, sector_name in panel_rows:
+        result.append({
+            "panel_id":    pid,
+            "sector_name": sector_name,
+            "stocks":      stocks_by_panel.get(pid, []),
+        })
+    return result
+
+
+def _load_dead_symbols_from_db() -> dict:
+    """Return {symbol: miss_count} for all persisted dead symbols."""
+    con = _db_connect()
+    rows = con.execute("SELECT symbol, misses FROM dead_symbols").fetchall()
+    con.close()
+    return {sym: misses for sym, misses in rows}
+
+
+def _db_mark_dead(symbol: str, misses: int) -> None:
+    """Upsert a dead-symbol record (called when miss count reaches threshold)."""
+    con = _db_connect()
+    con.execute(
+        "INSERT INTO dead_symbols (symbol, misses) VALUES (?,?) "
+        "ON CONFLICT(symbol) DO UPDATE SET misses=excluded.misses",
+        (symbol, misses)
+    )
+    con.commit()
+    con.close()
+
+
+def _db_clear_dead(symbol: str) -> None:
+    """Remove a symbol from dead_symbols (it resolved again)."""
+    con = _db_connect()
+    con.execute("DELETE FROM dead_symbols WHERE symbol=?", (symbol,))
+    con.commit()
+    con.close()
 
 
 _init_db()
-raw_sheet_data = _load_sheet_data_from_db()
+_db_panels        = _load_panels_from_db()
+# raw_sheet_data: {panel_id: [{symbol, name}]} — still used by _save_sheet_data / migration code
+raw_sheet_data    = {p["panel_id"]: p["stocks"] for p in _db_panels}
+_persisted_dead   = _load_dead_symbols_from_db()
+if _persisted_dead:
+    print(f"[DB] Loaded {len(_persisted_dead)} persisted dead symbols — skipping on fetch")
 
-# Build panels + deduplicated master symbol list
+# Build panels + deduplicated master symbol list — driven entirely by the database
 panels = []
 all_symbols:    list[str] = []   # ALL non-global symbols (NSE + BSE)
 global_symbols: list[str] = []   # raw yfinance tickers: ^DJI, GC=F, CL=F …
 bse_symbols:    list[str] = []   # DEPRECATED: kept only to not break old startup paths
 bse_override:   set[str]  = set()  # symbols to fetch via .BO (subset of all_symbols)
-dead_symbols:   dict      = {}     # symbol -> consecutive miss count; excluded after threshold
+dead_symbols:   dict      = dict(_persisted_dead)  # symbol -> miss count; persisted in DB
 DEAD_THRESHOLD  = 3               # skip after this many consecutive total misses
 seen_global: set[str] = set()
 
 PAGE_SIZE = 12  # must match frontend PAGE_SIZE constant
 
-for sector_name, sheet_key in PANEL_CONFIG:
-    stocks = raw_sheet_data.get(sheet_key, [])
+for _db_panel in _db_panels:
+    sheet_key   = _db_panel["panel_id"]
+    sector_name = _db_panel["sector_name"]
+    stocks = _db_panel["stocks"]
     panel_stocks = []
     seen_panel: set[str] = set()
-    _sheet_dirty = False
     for s in stocks:
         sym = s["symbol"]
-        # Strip any exchange suffix stored in sheet_data.json by mistake
-        clean = sym
-        if clean.upper().endswith(".BO"):  clean = clean[:-3]; _sheet_dirty = True
-        elif clean.upper().endswith(".NS"): clean = clean[:-3]; _sheet_dirty = True
-        if clean != sym:
-            s["symbol"] = clean
-            sym = clean
         if sym not in seen_panel:
             seen_panel.add(sym)
             panel_stocks.append({"symbol": sym, "name": s.get("name", sym)})
         if sym not in seen_global:
             seen_global.add(sym)
             all_symbols.append(sym)
-    if _sheet_dirty:
-        _save_sheet_data()
-        print(f"[INIT] Stripped exchange suffixes from {sheet_key}")
-    panels.append({"sector": sector_name, "stocks": panel_stocks, "id": sheet_key.strip()})
+    panels.append({"sector": sector_name, "stocks": panel_stocks, "id": sheet_key})
 
 print(f"[INIT] {len(panels)} panels, {len(all_symbols)} unique symbols")
 
@@ -230,7 +245,8 @@ def _save_order() -> None:
 _init_customs = _load_customs()
 
 # ── MIGRATION: handle old positional-index format keys alongside stable IDs ──
-_orig_ids    = [sk.strip() for _, sk in PANEL_CONFIG]   # original panel order mapping
+# _orig_ids derived from DB panel order (no longer a hardcoded list)
+_orig_ids    = [p["id"] for p in panels]
 _numeric_keys = [k for k in _init_customs
                  if k.lstrip("-").isdigit() and k not in ("__page_count__",)]
 if _numeric_keys:
@@ -302,9 +318,9 @@ if _migrated_pids:
             _disk_customs[_pid]["removed"] = []
             _disk_customs[_pid]["added"]   = []
     _save_customs(_disk_customs)
-    print(f"[INIT] Migrated historical customisations into sheet_data.json ({len(_migrated_pids)} panels)")
+    print(f"[INIT] Migrated historical customisations into database ({len(_migrated_pids)} panels)")
 
-# Pass 1: apply per-panel customisations to Excel-derived panels by stable id
+# Pass 1: apply per-panel customisations to DB-sourced panels by stable id
 for _panel in panels:
     _cust = _init_customs.get(_panel["id"], {})
     if _cust.get("sector_name"):
@@ -726,10 +742,13 @@ def update_all_prices() -> None:
             for s in still_missed:
                 dead_symbols[s] = dead_symbols.get(s, 0) + 1
                 if dead_symbols[s] == DEAD_THRESHOLD:
-                    print(f"[WARN] Marking {s} as dead after {DEAD_THRESHOLD} consecutive misses")
+                    print(f"[WARN] Marking {s} as dead after {DEAD_THRESHOLD} misses — persisting to DB")
+                    _db_mark_dead(s, dead_symbols[s])
         # Reset miss count for anything that resolved
         for s in result:
-            dead_symbols.pop(s, None)
+            if s in dead_symbols:
+                dead_symbols.pop(s)
+                _db_clear_dead(s)
         time.sleep(0.3)
 
     # BSE-override symbols: fetch directly via .BO with NSE fallback for misses
@@ -752,9 +771,12 @@ def update_all_prices() -> None:
             for s in still_missed:
                 dead_symbols[s] = dead_symbols.get(s, 0) + 1
                 if dead_symbols[s] == DEAD_THRESHOLD:
-                    print(f"[WARN] Marking {s} as dead after {DEAD_THRESHOLD} consecutive misses")
+                    print(f"[WARN] Marking {s} as dead after {DEAD_THRESHOLD} misses — persisting to DB")
+                    _db_mark_dead(s, dead_symbols[s])
         for s in result:
-            dead_symbols.pop(s, None)
+            if s in dead_symbols:
+                dead_symbols.pop(s)
+                _db_clear_dead(s)
         time.sleep(0.3)
 
     # Fetch non-NSE global symbols (commodities, foreign indices, futures)
