@@ -7,15 +7,13 @@ database, applies saved customisations, registers route blueprints, and
 starts background threads.
 """
 
-import json
-import os
 import threading
 
 from flask import Flask
 
 import state
 from core.db import _init_db, _load_panels_from_db, _load_dead_symbols_from_db
-from core.customizations import _load_customs, _save_customs, _save_sheet_data
+from core.customizations import _load_customs
 from core.fetcher import background_updater, mktcap_updater
 
 app = Flask(__name__)
@@ -57,74 +55,9 @@ for _db_panel in _db_panels:
 print(f"[INIT] {len(state.panels)} panels, {len(state.all_symbols)} unique symbols")
 
 # ---------------------------------------------------------------------------
-# APPLY SAVED CUSTOMISATIONS — stable-ID based
+# APPLY SAVED CUSTOMISATIONS
 # ---------------------------------------------------------------------------
 _init_customs = _load_customs()
-
-# ── MIGRATION: handle old positional-index format keys alongside stable IDs ──
-_orig_ids     = [p["id"] for p in state.panels]
-_numeric_keys = [k for k in _init_customs
-                 if k.lstrip("-").isdigit() and k not in ("__page_count__",)]
-if _numeric_keys:
-    if "__order__" not in _init_customs:
-        print("[INIT] Old positional customisations (no __order__) — clearing")
-        _init_customs = {}
-    else:
-        print(f"[INIT] Migrating {len(_numeric_keys)} positional customisations to stable IDs")
-        for _nk in _numeric_keys:
-            _n = int(_nk)
-            if 0 <= _n < len(_orig_ids):
-                _sid  = _orig_ids[_n]
-                _old  = _init_customs.pop(_nk)
-                _dest = _init_customs.setdefault(_sid, {"added": [], "removed": []})
-                _have = {s["symbol"] for s in _dest.get("added", [])}
-                for _s in _old.get("added", []):
-                    if _s["symbol"] not in _have:
-                        _dest.setdefault("added", []).append(_s)
-                _hrem = set(_dest.get("removed", []))
-                for _sym in _old.get("removed", []):
-                    if _sym not in _hrem:
-                        _dest.setdefault("removed", []).append(_sym)
-                if not _dest.get("sector_name") and _old.get("sector_name"):
-                    _dest["sector_name"] = _old["sector_name"]
-            else:
-                _init_customs.pop(_nk, None)
-        _save_customs(_init_customs)
-        print("[INIT] Migration complete")
-
-# ── Migration: bake historical removed/added from user_customizations.json
-# into the database so it is the permanent single source of truth.
-# IMPORTANT: we update raw_sheet_data and save to disk, but do NOT modify
-# _init_customs in memory — Pass 1 below still needs the original values.
-_migrated_pids = []
-for _panel in state.panels:
-    _pid     = _panel["id"]
-    _cust    = _init_customs.get(_pid, {})
-    _added   = list(_cust.get("added", []))
-    _removed = set(_cust.get("removed", []))
-    if _pid not in state.raw_sheet_data:
-        continue
-    if not (_added or _removed):
-        continue
-    if _removed:
-        state.raw_sheet_data[_pid] = [
-            s for s in state.raw_sheet_data[_pid] if s["symbol"] not in _removed
-        ]
-    for _as in _added:
-        if not any(s["symbol"] == _as["symbol"] for s in state.raw_sheet_data[_pid]):
-            state.raw_sheet_data[_pid].append(
-                {"symbol": _as["symbol"], "name": _as.get("name", _as["symbol"])}
-            )
-    _migrated_pids.append(_pid)
-if _migrated_pids:
-    _save_sheet_data()
-    _disk_customs = json.loads(json.dumps(_init_customs))
-    for _pid in _migrated_pids:
-        if _pid in _disk_customs:
-            _disk_customs[_pid]["removed"] = []
-            _disk_customs[_pid]["added"]   = []
-    _save_customs(_disk_customs)
-    print(f"[INIT] Migrated historical customisations into database ({len(_migrated_pids)} panels)")
 
 # Pass 1: apply per-panel customisations to DB-sourced panels
 for _panel in state.panels:
