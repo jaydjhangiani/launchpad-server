@@ -12,6 +12,7 @@ import json
 import os
 from datetime import datetime, timezone, timedelta
 import time
+from core.capital_gains import compute_all_cg, get_tax_rate_table
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -781,6 +782,49 @@ def api_ca_edit():
     actions[idx] = rec
     _save_ca(actions)
     return jsonify({"status": "ok", "action": rec})
+
+
+# ---------------------------------------------------------------------------
+# CAPITAL GAINS API
+# ---------------------------------------------------------------------------
+@app.route("/api/capital_gains")
+def api_capital_gains():
+    entries = [_migrate_entry(e) for e in _load_portfolio()]
+    ca_list = _load_ca()
+    result  = compute_all_cg(entries, ca_list)
+    return jsonify(result)
+
+
+@app.route("/api/capital_gains/tax_rates")
+def api_cg_tax_rates():
+    return jsonify(get_tax_rate_table())
+
+
+@app.route("/api/capital_gains/csv")
+def api_capital_gains_csv():
+    import csv, io
+    entries = [_migrate_entry(e) for e in _load_portfolio()]
+    result  = compute_all_cg(entries, _load_ca())
+    events  = result.get("events", [])
+
+    output = io.StringIO()
+    fields = [
+        "symbol", "jurisdiction", "currency", "acquisition_type",
+        "buy_date", "sell_date", "shares",
+        "buy_cost_per_share", "effective_cost_per_share",
+        "sell_price_per_share", "sell_charges_per_share",
+        "holding_days", "holding_period",
+        "gross_gain", "tax_rate_pct", "estimated_tax", "after_tax_gain",
+        "fy", "is_grandfathered",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(events)
+
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Type"]        = "text/csv"
+    resp.headers["Content-Disposition"] = 'attachment; filename="capital_gains.csv"'
+    return resp
 
 
 # ---------------------------------------------------------------------------
