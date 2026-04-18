@@ -146,13 +146,19 @@ def _derive_position_with_ca(entry: dict, ca_list: list) -> dict:
     for kind, _, evt in timeline:
         if kind == "tx":
             ttype = evt.get("type", "buy").lower()
-            sh = float(evt.get("shares", 0)); pr = float(evt.get("price", 0))
+            sh = float(evt.get("shares", 0))
+            pr = float(evt.get("price", 0))
+            # Include brokerage + charges in cost basis per share
+            charges = (float(evt.get("brokerage", 0)) +
+                       float(evt.get("stt", 0)) +
+                       float(evt.get("other_charges", 0)))
             if ttype == "buy":
-                total = open_shares * avg_cost + sh * pr
+                total_cost = open_shares * avg_cost + sh * pr + charges
                 open_shares += sh
-                avg_cost = total / open_shares if open_shares else 0.0
+                avg_cost = total_cost / open_shares if open_shares else 0.0
             elif ttype == "sell":
-                realized_pnl    += (pr - avg_cost) * sh
+                # Charges reduce realised P&L on sells
+                realized_pnl    += (pr - avg_cost) * sh - charges
                 sold_cost_basis += avg_cost * sh
                 open_shares      = max(0.0, open_shares - sh)
         else:
@@ -226,7 +232,11 @@ def _calc_cash_balance(txs: list) -> float:
     b = 0.0
     for t in txs:
         amt = float(t.get("amount", 0))
-        b += amt if t.get("type") == "deposit" else -amt
+        # dividend, deposit → positive; withdrawal → negative
+        if t.get("type") in ("deposit", "dividend"):
+            b += amt
+        else:
+            b -= amt
     return round(b, 2)
 
 
@@ -436,8 +446,22 @@ def api_portfolio_add():
     if entry is None:
         entry = {"symbol": symbol, "name": symbol, "exchange": exchange, "transactions": []}
         entries.append(entry)
-    entry["exchange"] = exchange
-    entry["transactions"].append({"date": tx_date, "type": tx_type, "shares": shares, "price": price})
+    entry["exchange"]     = exchange
+    # Optional enrichment fields
+    jurisdiction = (body.get("jurisdiction") or "").strip().upper() or None
+    currency     = (body.get("currency")     or "").strip().upper() or None
+    acq_type     = (body.get("acquisition_type") or "secondary").strip().lower()
+    if jurisdiction: entry["jurisdiction"] = jurisdiction
+    if currency:     entry["currency"]     = currency
+    tx = {"date": tx_date, "type": tx_type, "shares": shares, "price": price,
+          "acquisition_type": acq_type}
+    for field in ("brokerage", "stt", "other_charges"):
+        try:
+            v = float(body.get(field, 0) or 0)
+            if v > 0: tx[field] = round(v, 2)
+        except (TypeError, ValueError):
+            pass
+    entry["transactions"].append(tx)
     _save_portfolio(entries)
     return jsonify({"status": "ok", "symbol": symbol})
 
@@ -477,7 +501,16 @@ def api_portfolio_edit_tx():
     if entry is None: return jsonify({"error": "Symbol not found"}), 404
     txs = entry.get("transactions", [])
     if idx < 0 or idx >= len(txs): return jsonify({"error": "tx_index out of range"}), 400
-    txs[idx] = {"date": tx_date, "type": tx_type, "shares": shares, "price": price}
+    acq_type = (body.get("acquisition_type") or "secondary").strip().lower()
+    tx = {"date": tx_date, "type": tx_type, "shares": shares, "price": price,
+          "acquisition_type": acq_type}
+    for field in ("brokerage", "stt", "other_charges"):
+        try:
+            v = float(body.get(field, 0) or 0)
+            if v > 0: tx[field] = round(v, 2)
+        except (TypeError, ValueError):
+            pass
+    txs[idx] = tx
     _save_portfolio(entries)
     return jsonify({"status": "ok"})
 
@@ -596,8 +629,23 @@ def api_cash_add():
     try:    amount = float(body.get("amount", 0))
     except: return jsonify({"error": "Invalid amount"}), 400
     if amount <= 0: return jsonify({"error": "Amount must be > 0"}), 400
-    if tx_type not in ("deposit", "withdrawal"): return jsonify({"error": "Invalid type"}), 400
-    txs = _load_cash(); txs.append({"date": date, "type": tx_type, "amount": amount, "note": note})
+    if tx_type not in ("deposit", "withdrawal", "dividend"):
+        return jsonify({"error": "Invalid type"}), 400
+    tx = {"date": date, "type": tx_type, "amount": amount, "note": note}
+    if tx_type == "dividend":
+        sym = (body.get("symbol") or "").strip().upper()
+        if sym: tx["symbol"] = sym
+        for field in ("gross_per_share", "shares_at_record", "gross_amount",
+                      "tds_rate_pct", "tds_amount"):
+            try:
+                v = float(body.get(field, 0) or 0)
+                if v > 0: tx[field] = round(v, 4)
+            except (TypeError, ValueError):
+                pass
+        jurisdiction = (body.get("jurisdiction") or "").strip().upper()
+        if jurisdiction: tx["jurisdiction"] = jurisdiction
+    txs = _load_cash()
+    txs.append(tx)
     _save_cash(txs)
     return jsonify({"status": "ok", "balance": _calc_cash_balance(txs)})
 
@@ -624,10 +672,24 @@ def api_cash_edit():
     try:    amount = float(body.get("amount", 0))
     except: return jsonify({"error": "Invalid amount"}), 400
     if amount <= 0: return jsonify({"error": "Amount must be > 0"}), 400
-    if tx_type not in ("deposit", "withdrawal"): return jsonify({"error": "Invalid type"}), 400
+    if tx_type not in ("deposit", "withdrawal", "dividend"):
+        return jsonify({"error": "Invalid type"}), 400
     txs = _load_cash()
     if idx < 0 or idx >= len(txs): return jsonify({"error": "Index out of range"}), 400
-    txs[idx] = {"date": date, "type": tx_type, "amount": amount, "note": note}
+    tx = {"date": date, "type": tx_type, "amount": amount, "note": note}
+    if tx_type == "dividend":
+        sym = (body.get("symbol") or "").strip().upper()
+        if sym: tx["symbol"] = sym
+        for field in ("gross_per_share", "shares_at_record", "gross_amount",
+                      "tds_rate_pct", "tds_amount"):
+            try:
+                v = float(body.get(field, 0) or 0)
+                if v > 0: tx[field] = round(v, 4)
+            except (TypeError, ValueError):
+                pass
+        jurisdiction = (body.get("jurisdiction") or "").strip().upper()
+        if jurisdiction: tx["jurisdiction"] = jurisdiction
+    txs[idx] = tx
     _save_cash(txs)
     return jsonify({"status": "ok", "balance": _calc_cash_balance(txs)})
 
@@ -683,6 +745,42 @@ def api_ca_remove():
     if idx < 0 or idx >= len(actions): return jsonify({"error": "Index out of range"}), 400
     actions.pop(idx); _save_ca(actions)
     return jsonify({"status": "ok"})
+
+
+@app.route("/api/corporate_actions/edit", methods=["POST"])
+def api_ca_edit():
+    body = request.get_json(force=True, silent=True) or {}
+    try:   idx = int(body.get("index", -1))
+    except: return jsonify({"error": "Invalid index"}), 400
+    actions = _load_ca()
+    if idx < 0 or idx >= len(actions): return jsonify({"error": "Index out of range"}), 400
+    ca_type = (body.get("type") or "").strip().lower()
+    valid   = {"merger","amalgamation","name_change","demerger","spinoff",
+               "spin-off","split","subdivision","bonus"}
+    if ca_type not in valid: return jsonify({"error": f"Unknown type '{ca_type}'"}), 400
+    existing_id = actions[idx].get("id", f"ca-{idx+1:03d}")
+    date = (body.get("date") or "").strip()
+    note = str(body.get("note") or "").strip()[:300]
+    rec  = {"id": existing_id, "type": ca_type, "date": date, "note": note}
+    ca_cross = {"merger","amalgamation","name_change","demerger","spinoff","spin-off"}
+    if ca_type in ca_cross:
+        from_sym = (body.get("from_symbol") or "").strip().upper()
+        to_sym   = (body.get("to_symbol")   or "").strip().upper()
+        if not from_sym or not to_sym: return jsonify({"error": "from_symbol and to_symbol required"}), 400
+        rec["from_symbol"] = from_sym; rec["to_symbol"] = to_sym
+        if "ratio" in body:
+            try:   rec["ratio"] = float(body["ratio"])
+            except: pass
+    else:
+        sym = (body.get("symbol") or "").strip().upper()
+        if not sym: return jsonify({"error": "symbol required"}), 400
+        try:    ratio = float(body.get("ratio", 0))
+        except: return jsonify({"error": "ratio must be a number"}), 400
+        if ratio <= 0: return jsonify({"error": "ratio must be > 0"}), 400
+        rec["symbol"] = sym; rec["ratio"] = ratio
+    actions[idx] = rec
+    _save_ca(actions)
+    return jsonify({"status": "ok", "action": rec})
 
 
 # ---------------------------------------------------------------------------

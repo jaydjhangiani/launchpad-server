@@ -251,63 +251,6 @@
     ]
   },
   {
-    "symbol": "TRENT",
-    "name": "TRENT",
-    "exchange": "nse",
-    "transactions": [
-      {
-        "date": "2011-02-12",
-        "type": "buy",
-        "shares": 2000.0,
-        "price": 102.0
-      },
-      {
-        "date": "2025-02-27",
-        "type": "sell",
-        "shares": 2000.0,
-        "price": 4828.0
-      }
-    ]
-  },
-  {
-    "symbol": "JBCHEPHARM",
-    "name": "JBCHEPHARM",
-    "exchange": "nse",
-    "transactions": [
-      {
-        "date": "2011-01-31",
-        "type": "buy",
-        "shares": 3000.0,
-        "price": 55.615
-      },
-      {
-        "date": "2025-02-27",
-        "type": "sell",
-        "shares": 3000.0,
-        "price": 1540.0
-      }
-    ]
-  },
-  {
-    "symbol": "SPARC",
-    "name": "SPARC",
-    "exchange": "nse",
-    "transactions": [
-      {
-        "date": "2011-01-18",
-        "type": "buy",
-        "shares": 5066.0,
-        "price": 87.4
-      },
-      {
-        "date": "2025-02-14",
-        "type": "sell",
-        "shares": 5066.0,
-        "price": 139.8427
-      }
-    ]
-  },
-  {
     "symbol": "POONAWALLA",
     "name": "POONAWALLA",
     "exchange": "nse",

@@ -188,6 +188,7 @@
     #cash-table tr:hover td { background:#0a0a0a; }
     .cash-dep  { color:#00773a !important; }
     .cash-with { color:#883300 !important; }
+    .cash-div  { color:#446688 !important; }
     .cash-del  { color:#331111; cursor:pointer; padding:0 3px; }
     .cash-del:hover  { color:#ff4444; }
     .cash-edit { color:#1a3050; cursor:pointer; padding:0 3px; }
@@ -210,6 +211,8 @@
     #ca-table tr:hover td { background:#0a0a0a; }
     .ca-del { color:#331111; cursor:pointer; padding:0 3px; }
     .ca-del:hover { color:#ff4444; }
+    .ca-edit { color:#1a3050; cursor:pointer; padding:0 3px; }
+    .ca-edit:hover { color:#66aacc; }
     #ca-add-form { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:4px 0; }
     #ca-add-form select, #ca-add-form input { background:#070707; color:#88aacc; border:1px solid #1a3050; padding:2px 5px; font-size:9px; border-radius:2px; font-family:inherit; }
     #ca-add-form button { font-size:9px; padding:2px 8px; background:#0a2035; color:#00aaff; border:1px solid #1a3a55; border-radius:2px; cursor:pointer; font-family:inherit; }
@@ -391,15 +394,50 @@
              onkeydown="if(event.key==='Enter')addPortfolioPosition()" />
       <input id="port-price-inp" type="number" placeholder="Price &#8377;" min="0" step="any"
              onkeydown="if(event.key==='Enter')addPortfolioPosition()" />
+      <input id="port-brokerage-inp" type="number" placeholder="Brokerage" min="0" step="any" style="width:80px" title="Brokerage + STT + charges (added to cost basis)" />
+      <select id="port-acq-sel" title="Acquisition type" style="font-size:8px;background:#0a0a0a;color:#446688;border:1px solid #1a2a1a">
+        <option value="secondary">SECONDARY</option>
+        <option value="ipo">IPO</option>
+        <option value="fpo">FPO</option>
+        <option value="rights">RIGHTS</option>
+        <option value="preferential">PREFERENTIAL</option>
+        <option value="ofss">OFS/OFFER</option>
+      </select>
+      <select id="port-jur-sel" title="Jurisdiction" style="font-size:8px;background:#0a0a0a;color:#446688;border:1px solid #1a2a1a">
+        <option value="IN">IN</option>
+        <option value="US">US</option>
+        <option value="UK">UK</option>
+        <option value="JP">JP</option>
+        <option value="FR">FR</option>
+        <option value="DE">DE</option>
+      </select>
       <button id="port-exch-toggle" onclick="_portToggleExch()">NSE</button>
       <button id="port-add-btn" onclick="addPortfolioPosition()">BUY</button>
       <span id="port-add-err"></span>
     </span>
     <span id="pap-cash" style="display:none">
+      <button id="cash-type-toggle-btn" class="tx-type-btn tx-buy" data-t="deposit"
+        onclick="_cashCycleType(this)" style="min-width:90px">DEPOSIT</button>
       <input id="cash-date-inp" type="date" />
-      <input id="cash-amt-inp" type="number" placeholder="Amount &#8377;" min="0.01" step="any" style="width:130px" />
-      <input id="cash-note-inp" type="text" placeholder="Note (optional)" style="width:160px" />
-      <button id="cash-submit-btn" onclick="addCashTx()">DEPOSIT</button>
+      <input id="cash-amt-inp" type="number" placeholder="Net Amount &#8377;" min="0.01" step="any" style="width:120px" />
+      <input id="cash-note-inp" type="text" placeholder="Note (optional)" style="width:130px" />
+      <!-- Dividend-only fields (shown when type=dividend) -->
+      <span id="div-fields" style="display:none">
+        <input id="div-sym-inp"   type="text"   placeholder="SYMBOL" maxlength="20" style="width:70px"
+               oninput="this.value=this.value.toUpperCase()" />
+        <input id="div-gross-inp" type="number" placeholder="Gross/share" min="0" step="any" style="width:85px" oninput="_divCalcNet()" />
+        <input id="div-shares-inp" type="number" placeholder="Shares@record" min="0" step="any" style="width:90px" oninput="_divCalcNet()" />
+        <input id="div-tds-inp"  type="number" placeholder="TDS%" min="0" max="100" step="any" style="width:50px" title="TDS / withholding tax %" oninput="_divCalcNet()" />
+        <select id="div-jur-sel" title="Dividend jurisdiction (affects WHT rate)" onchange="_divJurChanged(this)" style="font-size:8px;background:#0a0a0a;color:#446688;border:1px solid #1a2a1a">
+          <option value="IN">IN (10%)</option>
+          <option value="US">US (15–30%)</option>
+          <option value="UK">UK (0%)</option>
+          <option value="JP">JP (10%)</option>
+          <option value="FR">FR (10%)</option>
+          <option value="DE">DE (10%)</option>
+        </select>
+      </span>
+      <button id="cash-submit-btn" onclick="addCashTx()">ADD</button>
       <span id="cash-add-err" style="font-size:9px;color:#cc4444;"></span>
     </span>
   </div>
@@ -417,7 +455,9 @@
           <tr>
             <th>DATE</th>
             <th>TYPE</th>
+            <th>SYMBOL</th>
             <th>AMOUNT &#8377;</th>
+            <th>TDS &#8377;</th>
             <th>NOTE</th>
             <th>BALANCE &#8377;</th>
             <th></th>
@@ -485,7 +525,44 @@ function isMarketOpen(){
   const m = ist.getUTCHours()*60 + ist.getUTCMinutes();
   return m >= 555 && m <= 930;
 }
-// ── BACK BUTTON — port-aware ──────────────────────────────────
+// ── CASH TYPE CYCLE (deposit / withdrawal / dividend) ────────
+let _cashType = 'deposit';
+const _cashTypeColors = {deposit:'tx-buy', withdrawal:'tx-sell', dividend:'tx-div'};
+const _cashTypeBtnText = {deposit:'DEPOSIT', withdrawal:'WITHDRAWAL', dividend:'DIVIDEND'};
+function _cashCycleType(btn){
+  const order = ['deposit','withdrawal','dividend'];
+  _cashType = order[(order.indexOf(_cashType)+1) % order.length];
+  btn.dataset.t = _cashType;
+  btn.textContent = _cashTypeBtnText[_cashType];
+  btn.className = 'tx-type-btn ' + (_cashTypeColors[_cashType]||'tx-buy');
+  const divFields = document.getElementById('div-fields');
+  if(divFields) divFields.style.display = _cashType==='dividend' ? '' : 'none';
+  const amtEl = document.getElementById('cash-amt-inp');
+  if(amtEl) amtEl.placeholder = _cashType==='dividend' ? 'Net received \u20B9' : 'Amount \u20B9';
+  // Auto-fill TDS% from jurisdiction default
+  if(_cashType==='dividend'){
+    const jurSel = document.getElementById('div-jur-sel');
+    if(jurSel) _divJurChanged(jurSel);
+  }
+}
+const _divWhtDefaults = {IN:10, US:25, UK:0, JP:10, FR:10, DE:10};
+function _divJurChanged(sel){
+  const rate = _divWhtDefaults[sel.value] ?? 0;
+  const tdsEl = document.getElementById('div-tds-inp');
+  if(tdsEl && !tdsEl.value) tdsEl.value = rate || '';
+}
+function _divCalcNet(){
+  const gross = parseFloat(document.getElementById('div-gross-inp')?.value||0);
+  const shares = parseFloat(document.getElementById('div-shares-inp')?.value||0);
+  const tds = parseFloat(document.getElementById('div-tds-inp')?.value||0);
+  if(gross > 0 && shares > 0){
+    const grossAmt = gross * shares;
+    const tdsAmt   = grossAmt * tds / 100;
+    const net      = grossAmt - tdsAmt;
+    const amtEl    = document.getElementById('cash-amt-inp');
+    if(amtEl) amtEl.value = net.toFixed(2);
+  }
+}
 (function(){
   const btn  = document.getElementById('pph-back-btn');
   const port = parseInt(window.location.port, 10) || 80;
@@ -523,7 +600,6 @@ let _portStatusFilter = 'all';   // 'all' | 'open' | 'closed'
 let _portSortCol      = null;
 let _portSortDir      = 1;
 let _portLastData     = [];
-let _cashType         = 'deposit';
 let _portActionType   = null;
 let _portType         = 'buy';
 
@@ -799,11 +875,14 @@ function _cashEditToggleType(btn){
 function _portEditCash(idx, date, type, amount, note){
   const row = document.getElementById(`cash-row-${idx}`);
   if(!row) return;
+  const isDividend = type === 'dividend';
   row.innerHTML = `
     <td><input class="tx-edit-inp" type="date" id="cedit-date-${idx}" value="${date}" /></td>
-    <td><button class="tx-type-btn ${type==='deposit'?'tx-buy':'tx-sell'}" id="cedit-type-${idx}"
+    <td><button class="tx-type-btn ${type==='deposit'?'tx-buy':type==='dividend'?'tx-div':'tx-sell'}" id="cedit-type-${idx}"
       data-t="${type}" onclick="_cashEditToggleType(this)">${type.toUpperCase()}</button></td>
+    <td><input class="tx-edit-inp" type="text" id="cedit-sym-${idx}" placeholder="SYM" style="width:55px" /></td>
     <td><input class="tx-edit-inp" type="number" id="cedit-amt-${idx}" value="${amount}" step="any" min="0.01" style="width:100px" /></td>
+    <td></td>
     <td><input class="tx-edit-inp" type="text"   id="cedit-note-${idx}" value="${escHtml(note||'')}" style="width:120px" /></td>
     <td></td>
     <td>
@@ -834,28 +913,36 @@ async function pollCash(){
     const data = await res.json();
     const fmtI = n => Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
     const cb = document.getElementById('port-cash-bal');
-    if(cb){ cb.textContent = '₹ '+fmtI(data.balance);
+    if(cb){ cb.textContent = '\u20B9 '+fmtI(data.balance);
       cb.className = data.balance>=0?'up':'down'; }
     const tbody = document.getElementById('cash-tbody');
     if(!tbody) return;
     let running = 0;
     const rows = (data.transactions||[]).map((tx,i)=>{
-      const d = tx.type==='deposit' ? tx.amount : -tx.amount;
+      const isDiv = tx.type==='dividend';
+      const isWd  = tx.type==='withdrawal';
+      const d = isWd ? -tx.amount : tx.amount;
       running += d;
-      const cls = tx.type==='deposit'?'cash-dep':'cash-with';
+      const cls = isDiv ? 'cash-div' : (isWd ? 'cash-with' : 'cash-dep');
+      const tdsFmt = tx.tds_amount ? fmtI(tx.tds_amount) : '--';
+      const symCol = isDiv ? (tx.symbol||'--') : '';
+      const sign   = isWd ? '-' : '+';
+      const noteEsc = (tx.note||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       return `<tr id="cash-row-${i}">
         <td>${tx.date||'--'}</td>
-        <td class="${cls}">${tx.type.toUpperCase()}</td>
-        <td class="${cls}">${tx.type==='deposit'?'+':'-'}${fmtI(tx.amount)}</td>
+        <td class="${cls}">${tx.type.toUpperCase()}${tx.jurisdiction?` <span style="font-size:7px;color:#446688">${tx.jurisdiction}</span>`:''}</td>
+        <td style="color:#66aacc">${escHtml(symCol)}</td>
+        <td class="${cls}">${sign}${fmtI(tx.amount)}</td>
+        <td style="color:#885544">${isDiv ? tdsFmt : ''}</td>
         <td style="color:#446688">${escHtml(tx.note||'')}</td>
         <td style="color:#668">${fmtI(running)}</td>
         <td style="white-space:nowrap">
-          <span class="cash-edit" onclick="_portEditCash(${i},'${tx.date||''}','${tx.type}',${tx.amount},'${(tx.note||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}') " title="Edit">✎</span>
+          <span class="cash-edit" onclick="_portEditCash(${i},'${tx.date||''}','${tx.type}',${tx.amount},'${noteEsc}')" title="Edit">&#9998;</span>
           <span class="cash-del"  onclick="removeCashTx(${i})" title="Delete">&#10005;</span>
         </td>
       </tr>`;
     }).join('');
-    tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:#1a3050">NO CASH TRANSACTIONS</td></tr>';
+    tbody.innerHTML = rows || '<tr><td colspan="8" style="text-align:center;color:#1a3050">NO CASH TRANSACTIONS</td></tr>';
   }catch(e){ console.error('Cash poll error:',e); }
 }
 
@@ -902,17 +989,72 @@ async function pollCorporateActions(){
       const fromCol = isCross ? escHtml(ca.from_symbol||'') : escHtml(ca.symbol||'');
       const toCol   = isCross ? escHtml(ca.to_symbol||'') : '';
       const ratio   = ca.ratio!=null ? Number(ca.ratio).toFixed(ca.ratio%1===0?0:4) : '';
-      return `<tr>
+      return `<tr id="ca-row-${i}">
         <td style="color:#336699;font-size:8px;letter-spacing:1px">${lbl}</td>
         <td class="ca-sym">${fromCol}</td>
         <td class="ca-sym">${toCol}</td>
         <td class="ca-date">${ca.date||'--'}</td>
         <td style="color:#335566">${ratio}</td>
         <td class="ca-note" title="${escHtml(ca.note||'')}">${escHtml(ca.note||'')}</td>
-        <td><span class="ca-del" onclick="removeCorporateAction(${i})" title="Remove">&#10005;</span></td>
+        <td style="white-space:nowrap">
+          <span class="ca-edit" onclick="_caEdit(${i})" title="Edit">&#9998;</span>
+          <span class="ca-del" onclick="removeCorporateAction(${i})" title="Remove">&#10005;</span>
+        </td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:#1a3050;padding:6px">NO CORPORATE ACTIONS</td></tr>';
   }catch(e){ console.error('CA poll error:',e); }
+}
+function _caEdit(idx){
+  const row = document.getElementById(`ca-row-${idx}`);
+  if(!row) return;
+  // Read current values from the rendered cells
+  const cells = row.querySelectorAll('td');
+  const typeTxt = (cells[0]?.textContent||'').trim().toLowerCase().replace(' chg','').replace('-','');
+  // Map label back to value
+  const typMap = {merger:'merger',amalgamation:'amalgamation',namechg:'name_change',demerger:'demerger',
+    'spinoff':'spinoff','spin-off':'spinoff',split:'split',subdiv:'subdivision',bonus:'bonus'};
+  const typeVal = Object.entries(CA_TYPE_LABELS).find(([k,v])=>v===cells[0]?.textContent.trim())?.[0] || 'merger';
+  const isCross = CA_CROSS.has(typeVal);
+  const from = cells[1]?.textContent.trim()||'';
+  const to   = cells[2]?.textContent.trim()||'';
+  const date = cells[3]?.textContent.trim()||'';
+  const ratio= cells[4]?.textContent.trim()||'';
+  const note = cells[5]?.textContent.trim()||'';
+  const typeOpts = Object.entries(CA_TYPE_LABELS).map(([k,v])=>
+    `<option value="${k}"${k===typeVal?' selected':''}>${v}</option>`).join('');
+  row.innerHTML = `
+    <td><select id="cae-type-${idx}" style="font-size:8px;background:#0a0a0a;color:#336699;border:1px solid #1a3a2a" onchange="_caEditTypeChange(${idx})">${typeOpts}</select></td>
+    <td><input id="cae-from-${idx}" type="text" value="${escHtml(from)}" style="width:60px" placeholder="FROM/SYM"/></td>
+    <td><input id="cae-to-${idx}"   type="text" value="${escHtml(to)}"   style="width:60px" placeholder="TO"/></td>
+    <td><input id="cae-date-${idx}" type="date" value="${date!=='--'?date:''}" style="width:100px"/></td>
+    <td><input id="cae-ratio-${idx}"type="number" value="${ratio}" step="any" style="width:50px"/></td>
+    <td><input id="cae-note-${idx}" type="text" value="${escHtml(note)}" style="width:100px"/></td>
+    <td style="white-space:nowrap">
+      <span class="tx-save"   onclick="_caSaveEdit(${idx})" title="Save">&#10003;</span>
+      <span class="tx-cancel" onclick="pollCorporateActions()" title="Cancel">&#10005;</span>
+    </td>`;
+}
+function _caEditTypeChange(idx){
+  const typeVal = document.getElementById(`cae-type-${idx}`)?.value||'';
+  const isCross = CA_CROSS.has(typeVal);
+  const toInp   = document.getElementById(`cae-to-${idx}`);
+  if(toInp) toInp.style.display = isCross ? '' : 'none';
+}
+async function _caSaveEdit(idx){
+  const type  = document.getElementById(`cae-type-${idx}`)?.value||'';
+  const from  = (document.getElementById(`cae-from-${idx}`)?.value||'').trim().toUpperCase();
+  const to    = (document.getElementById(`cae-to-${idx}`)?.value||'').trim().toUpperCase();
+  const date  = document.getElementById(`cae-date-${idx}`)?.value||'';
+  const ratio = parseFloat(document.getElementById(`cae-ratio-${idx}`)?.value||'0');
+  const note  = document.getElementById(`cae-note-${idx}`)?.value||'';
+  const isCross = CA_CROSS.has(type);
+  const body = {index: idx, type, date, note};
+  if(isCross){ body.from_symbol=from; body.to_symbol=to; if(!isNaN(ratio)&&ratio>0) body.ratio=ratio; }
+  else       { body.symbol=from; body.ratio=ratio; }
+  const res = await fetch('/api/corporate_actions/edit',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(res.ok){ pollCorporateActions(); pollPortfolio(); }
+  else { const j=await res.json(); alert(j.error||'Error saving CA'); }
 }
 async function addCorporateAction(){
   const errEl = document.getElementById('ca-add-err');
@@ -962,16 +1104,33 @@ async function addCashTx(){
   const amount = parseFloat(amtEl?.value);
   if(isNaN(amount)||amount<=0){ if(errEl) errEl.textContent='Enter amount > 0'; return; }
   if(errEl) errEl.textContent='';
+  const body = {date:(dateEl&&dateEl.value)||new Date().toISOString().slice(0,10),
+    type:_cashType, amount, note:(noteEl&&noteEl.value)||''};
+  if(_cashType === 'dividend'){
+    const sym  = (document.getElementById('div-sym-inp')?.value||'').trim().toUpperCase();
+    const gps  = parseFloat(document.getElementById('div-gross-inp')?.value||0);
+    const shr  = parseFloat(document.getElementById('div-shares-inp')?.value||0);
+    const tds  = parseFloat(document.getElementById('div-tds-inp')?.value||0);
+    const jur  = document.getElementById('div-jur-sel')?.value||'IN';
+    if(sym) body.symbol = sym;
+    if(gps > 0) body.gross_per_share = gps;
+    if(shr > 0){ body.shares_at_record = shr; body.gross_amount = round2(gps*shr); }
+    if(tds > 0){ body.tds_rate_pct = tds; body.tds_amount = round2((gps*shr||amount/(1-tds/100))*tds/100); }
+    body.jurisdiction = jur;
+  }
   const res = await fetch('/api/cash/add',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({date:(dateEl&&dateEl.value)||new Date().toISOString().slice(0,10),
-      type:_cashType, amount, note:(noteEl&&noteEl.value)||''})});
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const json = await res.json();
   if(!res.ok){ if(errEl) errEl.textContent=json.error||'Error'; return; }
   if(amtEl) amtEl.value='';
   if(noteEl) noteEl.value='';
+  // Clear dividend fields
+  ['div-sym-inp','div-gross-inp','div-shares-inp','div-tds-inp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
   pollCash(); pollPortfolio();
 }
+function round2(n){ return Math.round(n*100)/100; }
 async function removeCashTx(idx){
   if(!confirm('Remove this cash transaction?')) return;
   const res = await fetch('/api/cash/remove',{method:'POST',
@@ -993,9 +1152,14 @@ async function addPortfolioPosition(){
   if(isNaN(shares)||shares<=0){ errEl.textContent='Enter shares > 0'; return; }
   if(isNaN(price)||price<=0)  { errEl.textContent='Enter price > 0'; return; }
   errEl.textContent='';
+  const brok = parseFloat(document.getElementById('port-brokerage-inp')?.value||0);
+  const acq  = document.getElementById('port-acq-sel')?.value||'secondary';
+  const jur  = document.getElementById('port-jur-sel')?.value||'IN';
+  const body = {symbol:sym, shares, price, date:dateVal, type:_portType, exchange:_portExch,
+    acquisition_type:acq, jurisdiction:jur};
+  if(brok > 0) body.brokerage = brok;
   const res = await fetch('/api/portfolio/add',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:sym, shares, price, date:dateVal, type:_portType, exchange:_portExch})});
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const json = await res.json();
   if(!res.ok){ errEl.textContent=json.error||'Error'; return; }
   symEl.value=''; shEl.value=''; prEl.value='';
