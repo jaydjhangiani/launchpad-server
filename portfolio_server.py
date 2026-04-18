@@ -791,7 +791,9 @@ def api_ca_edit():
 def api_capital_gains():
     entries = [_migrate_entry(e) for e in _load_portfolio()]
     ca_list = _load_ca()
-    result  = compute_all_cg(entries, ca_list)
+    with _cache_lock:
+        prices = dict(_price_cache)   # snapshot — keys are symbol strings
+    result  = compute_all_cg(entries, ca_list, prices)
     return jsonify(result)
 
 
@@ -804,7 +806,9 @@ def api_cg_tax_rates():
 def api_capital_gains_csv():
     import csv, io
     entries = [_migrate_entry(e) for e in _load_portfolio()]
-    result  = compute_all_cg(entries, _load_ca())
+    with _cache_lock:
+        prices = dict(_price_cache)
+    result  = compute_all_cg(entries, _load_ca(), prices)
     events  = result.get("events", [])
 
     output = io.StringIO()
@@ -815,7 +819,7 @@ def api_capital_gains_csv():
         "sell_price_per_share", "sell_charges_per_share",
         "holding_days", "holding_period",
         "gross_gain", "tax_rate_pct", "estimated_tax", "after_tax_gain",
-        "fy", "is_grandfathered",
+        "fy", "is_grandfathered", "is_unrealized",
     ]
     writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()

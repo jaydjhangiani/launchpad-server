@@ -232,6 +232,7 @@
     .cg-card-lbl { font-size:7px; color:#0a2a40; letter-spacing:1px; margin-bottom:2px; }
     .cg-card-val { font-size:11px; font-weight:700; font-family:monospace; }
     .cg-card-neutral { color:#336688; }
+    .cg-unreal-card { opacity:0.72; border-style:dashed; }
     #cg-controls { margin-left:auto; display:flex; align-items:center; gap:6px; }
     #cg-controls select { font-size:8px; background:#040c14; color:#336688; border:1px solid #0a1a28; padding:2px 4px; font-family:inherit; border-radius:2px; }
     .cg-export-lnk { color:#1a4060; font-size:8px; text-decoration:none; letter-spacing:1px; }
@@ -251,6 +252,7 @@
     .cg-stcg { color:#cc6600 !important; font-weight:700; font-size:8px; letter-spacing:1px; }
     .cg-ltcg { color:#0088bb !important; font-weight:700; font-size:8px; letter-spacing:1px; }
     .cg-gf   { color:#cc8833; font-size:7px; vertical-align:super; margin-left:1px; }
+    .cg-unreal-row td { opacity:0.6; font-style:italic; }
     #cg-fy-summary { margin-top:10px; }
     #cg-fy-summary table { width:100%; border-collapse:collapse; font-size:9px; background:#030c16; }
     #cg-fy-summary th { color:#0a2535; font-size:7px; letter-spacing:1px; padding:3px 6px;
@@ -562,6 +564,8 @@
     <div id="port-cg-body">
       <!-- Summary cards -->
       <div id="cg-summary-bar">
+        <!-- Realized row -->
+        <div style="font-size:7px;color:#0a2535;letter-spacing:2px;width:100%;padding:2px 0 1px">REALISED</div>
         <div class="cg-card">
           <div class="cg-card-lbl">STCG GAIN</div>
           <div class="cg-card-val" id="cgc-stcg">&#8212;</div>
@@ -582,7 +586,32 @@
           <div class="cg-card-lbl">AFTER-TAX GAIN</div>
           <div class="cg-card-val" id="cgc-after">&#8212;</div>
         </div>
+        <!-- Unrealized row -->
+        <div style="font-size:7px;color:#0a2535;letter-spacing:2px;width:100%;padding:4px 0 1px;border-top:1px solid #081820;margin-top:2px">
+          UNREALISED (at current prices &#8212; hypothetical)
+        </div>
+        <div class="cg-card cg-unreal-card">
+          <div class="cg-card-lbl">OPEN STCG</div>
+          <div class="cg-card-val" id="cgc-ustcg">&#8212;</div>
+        </div>
+        <div class="cg-card cg-unreal-card">
+          <div class="cg-card-lbl">OPEN LTCG</div>
+          <div class="cg-card-val" id="cgc-ultcg">&#8212;</div>
+        </div>
+        <div class="cg-card cg-unreal-card">
+          <div class="cg-card-lbl">IF SOLD TODAY — TAX</div>
+          <div class="cg-card-val" id="cgc-utax">&#8212;</div>
+        </div>
+        <div class="cg-card cg-unreal-card">
+          <div class="cg-card-lbl">IF SOLD TODAY — NET</div>
+          <div class="cg-card-val" id="cgc-uafter">&#8212;</div>
+        </div>
         <div id="cg-controls">
+          <label style="font-size:8px;color:#0a2535;cursor:pointer">
+            <input type="checkbox" id="cg-show-unreal" checked onchange="_cgFilterFy(_cgFyFilter)"
+              style="margin-right:3px;accent-color:#00aacc" />
+            SHOW OPEN
+          </label>
           <select id="cg-fy-filter" onchange="_cgFilterFy(this.value)">
             <option value="all">ALL FYs</option>
           </select>
@@ -1374,6 +1403,7 @@ function _cgRender(data){
   const summary = data.summary || {};
   const events  = data.events  || [];
   const byFy    = summary.by_fy || {};
+  const showUnreal = document.getElementById('cg-show-unreal')?.checked !== false;
 
   // ── Populate FY filter ──────────────────────────────────────
   const sel = document.getElementById('cg-fy-filter');
@@ -1383,10 +1413,9 @@ function _cgRender(data){
       keys.map(k=>`<option value="${k}"${_cgFyFilter===k?' selected':''}>${k}</option>`).join('');
   }
 
-  // ── Determine filtered totals ───────────────────────────────
+  // ── Realized summary cards ──────────────────────────────────
   let filteredFy = null;
   if(_cgFyFilter !== 'all') filteredFy = byFy[_cgFyFilter];
-
   const allFyVals = Object.values(byFy);
   const dispStcg   = filteredFy ? filteredFy.stcg.gross_gain    : allFyVals.reduce((s,f)=>s+f.stcg.gross_gain,0);
   const dispLtcg   = filteredFy ? filteredFy.ltcg.gross_gain    : allFyVals.reduce((s,f)=>s+f.ltcg.gross_gain,0);
@@ -1394,7 +1423,6 @@ function _cgRender(data){
   const dispTax    = filteredFy ? filteredFy.total_tax           : (summary.total_estimated_tax||0);
   const dispAfter  = filteredFy ? filteredFy.total_after_tax     : (summary.total_after_tax_gain||0);
 
-  // ── Summary cards ───────────────────────────────────────────
   const setCard = (id, val, signed) => {
     const el = document.getElementById(id); if(!el) return;
     el.textContent = (signed&&val!=null&&val>=0?'+':'')+fmt0(val);
@@ -1409,35 +1437,52 @@ function _cgRender(data){
     txEl.className = 'cg-card-val'+(dispTax>0?' down':''); }
   setCard('cgc-after', dispAfter, true);
 
-  // ── Header badge ────────────────────────────────────────────
-  const badge = document.getElementById('port-cg-badge');
-  if(badge) badge.textContent = events.length
-    ? `${events.length} event${events.length!==1?'s':''} \u00B7 est. tax ${fmt0(summary.total_estimated_tax||0)}`
-    : 'no realised events';
+  // ── Unrealized summary cards ────────────────────────────────
+  setCard('cgc-ustcg',  summary.unrealized_stcg||0,           true);
+  setCard('cgc-ultcg',  summary.unrealized_ltcg||0,           true);
+  const utxEl = document.getElementById('cgc-utax');
+  const utVal = summary.unrealized_estimated_tax||0;
+  if(utxEl){ utxEl.textContent = utVal>0 ? '-'+fmt0(utVal) : '0';
+    utxEl.className = 'cg-card-val'+(utVal>0?' down':''); }
+  setCard('cgc-uafter', summary.unrealized_after_tax_gain||0, true);
 
-  // ── Events table ────────────────────────────────────────────
+  // ── Header badge ────────────────────────────────────────────
+  const realCount = events.filter(e=>!e.is_unrealized).length;
+  const openCount = events.filter(e=> e.is_unrealized).length;
+  const badge = document.getElementById('port-cg-badge');
+  if(badge){
+    badge.textContent = realCount
+      ? `${realCount} realised · ${openCount} open lots`
+      : `${openCount} open lots (no realised events)`;
+  }
+
+  // ── Events table ─────────────────────────────────────────────
   const tbody = document.getElementById('cg-tbody');
   if(!tbody) return;
   let vis = events;
-  if(_cgFyFilter !== 'all') vis = events.filter(e=>byFy[_cgFyFilter] && `${e.fy} (${e.jurisdiction})`===_cgFyFilter);
+  if(!showUnreal)          vis = vis.filter(e=>!e.is_unrealized);
+  if(_cgFyFilter !== 'all') vis = vis.filter(e=>`${e.fy} (${e.jurisdiction})`===_cgFyFilter);
 
   if(!vis.length){
-    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:#0a2535;padding:14px;letter-spacing:2px">
-      NO REALISED CAPITAL GAINS EVENTS</td></tr>`;
+    const msg = !showUnreal ? 'NO REALISED EVENTS — TOGGLE "SHOW OPEN" TO SEE UNREALISED'
+                            : 'NO CAPITAL GAINS EVENTS';
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:#0a2535;padding:14px;letter-spacing:1px">${msg}</td></tr>`;
   } else {
     tbody.innerHTML = vis.map(ev=>{
-      const isLT  = ev.holding_period === 'long';
-      const tCls  = isLT ? 'cg-ltcg' : 'cg-stcg';
-      const tLbl  = isLT ? 'LTCG' : 'STCG';
-      const gCls  = cc(ev.gross_gain);
-      const aCls  = cc(ev.after_tax_gain);
-      const gfBadge = ev.is_grandfathered ? '<span class="cg-gf" title="Grandfathered cost basis (Jan 31 2018 FMV)">GF</span>' : '';
-      const sh    = ev.shares%1===0 ? ev.shares : Number(ev.shares).toFixed(4);
-      return `<tr>
-        <td><b>${escHtml(ev.symbol)}</b></td>
+      const isLT   = ev.holding_period === 'long';
+      const tCls   = isLT ? 'cg-ltcg' : 'cg-stcg';
+      const tLbl   = isLT ? 'LTCG' : 'STCG';
+      const gCls   = cc(ev.gross_gain);
+      const aCls   = cc(ev.after_tax_gain);
+      const gfBadge = ev.is_grandfathered ? '<span class="cg-gf" title="Grandfathered cost basis">GF</span>' : '';
+      const sh     = ev.shares%1===0 ? ev.shares : Number(ev.shares).toFixed(4);
+      const unrLbl = ev.is_unrealized ? '<span style="font-size:7px;color:#1a4060;margin-left:2px">OPEN</span>' : '';
+      const rowCls = ev.is_unrealized ? ' class="cg-unreal-row"' : '';
+      return `<tr${rowCls}>
+        <td><b>${escHtml(ev.symbol)}</b>${unrLbl}</td>
         <td style="font-size:7px;color:#1a4060">${ev.jurisdiction}</td>
         <td style="color:#335566">${ev.buy_date||'--'}</td>
-        <td style="color:#335566">${ev.sell_date||'--'}</td>
+        <td style="color:#335566">${ev.is_unrealized?'<i>today</i>':ev.sell_date||'--'}</td>
         <td style="color:#1a3a50">${sh}</td>
         <td style="color:#223344">${fmt(ev.effective_cost_per_share)}${gfBadge}</td>
         <td style="color:#223344">${fmt(ev.sell_price_per_share)}</td>
@@ -1452,14 +1497,14 @@ function _cgRender(data){
     }).join('');
   }
 
-  // ── FY summary table ────────────────────────────────────────
+  // ── FY summary table (realized only) ─────────────────────────
   const fyDiv = document.getElementById('cg-fy-summary');
   if(!fyDiv) return;
   const fyKeys = _cgFyFilter==='all' ? Object.keys(byFy) : (byFy[_cgFyFilter]?[_cgFyFilter]:[]);
   if(!fyKeys.length){ fyDiv.innerHTML=''; return; }
 
   fyDiv.innerHTML = `
-  <div class="cg-fy-lbl">&#9472; FISCAL YEAR SUMMARY</div>
+  <div class="cg-fy-lbl">&#9472; FISCAL YEAR SUMMARY (REALISED)</div>
   <table>
     <thead><tr>
       <th>FY</th><th>JUR</th>

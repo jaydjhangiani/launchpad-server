@@ -120,7 +120,11 @@ def _fiscal_year(sell_str: str, jur: str) -> str:
 # Per-entry FIFO lot engine
 # ---------------------------------------------------------------------------
 
-def compute_cg_events(entry: dict, ca_list: list) -> list[dict]:
+def compute_cg_events(
+    entry: dict,
+    ca_list: list,
+    current_price: float | None = None,
+) -> list[dict]:
     """
     FIFO lot matching for one portfolio entry.
 
@@ -129,6 +133,8 @@ def compute_cg_events(entry: dict, ca_list: list) -> list[dict]:
     - Intra-symbol CAs (split/subdivision/bonus) adjust existing lots in-place.
     - `grandfathered_cost_per_share` on a buy transaction overrides the cost
       basis for IN LTCG events (grandfathering clause for pre-Jan-2018 holdings).
+    - If `current_price` is supplied, remaining open lots are also valued using
+      today's price and emitted as unrealized CG events (is_unrealized=True).
 
     Returns a list of CG event dicts, one per matched lot slice.
     """
@@ -265,6 +271,53 @@ def compute_cg_events(entry: dict, ca_list: list) -> list[dict]:
                         })
                 lots.extend(new_lots)
 
+    # ── Unrealized events for remaining open lots ────────────────────────────
+    today_str = datetime.date.today().isoformat()
+    if current_price and current_price > 0 and lots:
+        for lot in lots:
+            if lot["shares"] <= 1e-8:
+                continue
+            taken  = lot["shares"]
+            days   = _holding_days(lot["date"], today_str)
+            period = _classify(days, jur)
+            rate   = _tax_rate(jur, period, today_str)
+
+            eff_cost = lot["cost_per_share"]
+            gf_cost  = lot.get("grandfathered_cost_per_share")
+            is_gf    = False
+            if gf_cost is not None and jur == "IN" and period == "long":
+                eff_cost = max(eff_cost, float(gf_cost))
+                is_gf    = True
+
+            gross = round(taken * current_price - taken * eff_cost, 2)
+            tax   = round(max(0.0, gross) * rate / 100, 2)
+            fy    = _fiscal_year(today_str, jur)
+            exempt = _ltcg_exempt_for(jur, today_str) if period == "long" else 0.0
+
+            events.append({
+                "symbol":                    sym,
+                "jurisdiction":              jur,
+                "currency":                  curr,
+                "acquisition_type":          lot["acquisition_type"],
+                "buy_date":                  lot["date"],
+                "sell_date":                 today_str,
+                "shares":                    round(taken, 6),
+                "buy_cost_per_share":        round(lot["cost_per_share"], 4),
+                "effective_cost_per_share":  round(eff_cost, 4),
+                "sell_price_per_share":      round(current_price, 4),
+                "sell_charges_per_share":    0.0,
+                "holding_days":              days,
+                "holding_period":            period,
+                "gross_gain":                gross,
+                "tax_rate_pct":              rate,
+                "ltcg_exempt_annual":        exempt,
+                "estimated_tax":             tax,
+                "after_tax_gain":            round(gross - tax, 2),
+                "fy":                        fy,
+                "is_grandfathered":          is_gf,
+                "is_unrealized":             True,
+            })
+
     return events
 
 
@@ -272,34 +325,55 @@ def compute_cg_events(entry: dict, ca_list: list) -> list[dict]:
 # Portfolio-level aggregation
 # ---------------------------------------------------------------------------
 
-def compute_all_cg(entries: list[dict], ca_list: list) -> dict:
+def compute_all_cg(entries: list[dict], ca_list: list, prices: dict | None = None) -> dict:
     """
     Compute CG events for all portfolio entries and return
     {events: [...], summary: {...}}.
+
+    `prices` should be a dict keyed by symbol → float (the current LTP).
+    When provided, open lots are also included as unrealized events.
     """
     all_events: list[dict] = []
     for entry in entries:
         try:
-            all_events.extend(compute_cg_events(entry, ca_list))
+            sym = str(entry.get("symbol", "")).strip().upper()
+            current_price: float | None = None
+            if prices:
+                raw = prices.get(sym)
+                if isinstance(raw, dict):
+                    current_price = raw.get("price")
+                elif isinstance(raw, (int, float)):
+                    current_price = float(raw)
+            all_events.extend(compute_cg_events(entry, ca_list, current_price))
         except Exception:
             pass   # don't let one broken entry kill the whole computation
 
-    all_events.sort(key=lambda e: e.get("sell_date", ""))
+    all_events.sort(key=lambda e: (e.get("is_unrealized", False), e.get("sell_date", "")))
     return {"events": all_events, "summary": _summarize(all_events)}
 
 
 def _summarize(events: list[dict]) -> dict:
     """
     Aggregate events into by_fy and by_jurisdiction with LTCG exemptions applied.
+    Realized and unrealized events are tracked separately.
 
-    LTCG exemption logic (per FY + jurisdiction):
-      1. Sum all LTCG gains and losses → net_ltcg
+    LTCG exemption logic (per FY + jurisdiction, realized only):
+      1. Sum all realized LTCG gains and losses → net_ltcg
       2. Subtract exemption from positive net_ltcg → taxable_ltcg
       3. STCG losses do NOT offset LTCG gains here (left to user's tax return).
     """
+    realized   = [e for e in events if not e.get("is_unrealized")]
+    unrealized = [e for e in events if e.get("is_unrealized")]
+
     groups: dict[tuple, list] = defaultdict(list)
-    for ev in events:
+    for ev in realized:
         groups[(ev["jurisdiction"], ev["fy"])].append(ev)
+
+    # Also compute unrealized subtotals globally
+    unreal_stcg = round(sum(e["gross_gain"] for e in unrealized if e["holding_period"]=="short"), 2)
+    unreal_ltcg = round(sum(e["gross_gain"] for e in unrealized if e["holding_period"]=="long"),  2)
+    unreal_tax  = round(sum(e["estimated_tax"]  for e in unrealized), 2)
+    unreal_after = round(sum(e["after_tax_gain"] for e in unrealized), 2)
 
     by_fy:  dict[str, dict] = {}
     by_jur: dict[str, dict] = {}
@@ -315,7 +389,6 @@ def _summarize(events: list[dict]) -> dict:
         stcg_rate  = st[0]["tax_rate_pct"] if st else 0.0
         ltcg_rate  = lt[0]["tax_rate_pct"] if lt else 0.0
 
-        # Exemption reference from any event in the group (same for all events in jur+fy)
         ltcg_exempt = evs[0]["ltcg_exempt_annual"] if evs else 0.0
 
         stcg_taxable = max(0.0, stcg_gross)
@@ -372,11 +445,15 @@ def _summarize(events: list[dict]) -> dict:
         j["events"]    += len(evs)
 
     return {
-        "total_gross_gain":    round(total_gross, 2),
-        "total_estimated_tax": round(total_tax,   2),
-        "total_after_tax_gain": round(total_after, 2),
-        "by_fy":               by_fy,
-        "by_jurisdiction":     by_jur,
+        "total_gross_gain":          round(total_gross, 2),
+        "total_estimated_tax":       round(total_tax,   2),
+        "total_after_tax_gain":       round(total_after, 2),
+        "unrealized_stcg":           unreal_stcg,
+        "unrealized_ltcg":           unreal_ltcg,
+        "unrealized_estimated_tax":  unreal_tax,
+        "unrealized_after_tax_gain": unreal_after,
+        "by_fy":                     by_fy,
+        "by_jurisdiction":           by_jur,
     }
 
 
