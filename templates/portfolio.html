@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>Ruliad Capital ΓÇö Portfolio</title>
+  <title>Ruliad Capital — Portfolio</title>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -34,7 +34,7 @@
     }
     body { display: flex; flex-direction: column; }
 
-    /* ΓöÇΓöÇ SLIM PAGE HEADER ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+    /* ── SLIM PAGE HEADER ──────────────────────────────── */
     #port-page-hdr {
       flex-shrink: 0;
       height: 36px;
@@ -84,7 +84,7 @@
     }
     .pph-back:hover { color: #88bbdd; border-color: #2a4a6a; background: #112233; }
 
-    /* ΓöÇΓöÇ PORTFOLIO VIEW ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+    /* ── PORTFOLIO VIEW ──────────────────────────────────── */
     #portfolio-view {
       display: flex;
       flex-direction: column;
@@ -303,7 +303,7 @@
 </head>
 <body>
 
-<!-- ΓöÇΓöÇ Slim page header ΓöÇΓöÇ -->
+<!-- ── Slim page header ── -->
 <div id="port-page-hdr">
   <span class="pph-logo">RULIAD CAPITAL</span>
   <span class="pph-title">&#9672; PORTFOLIO</span>
@@ -313,41 +313,41 @@
   <a class="pph-back" id="pph-back-btn" href="#">&#9664; LAUNCHPAD</a>
 </div>
 
-<!-- ΓöÇΓöÇ Portfolio view (always visible) ΓöÇΓöÇ -->
+<!-- ── Portfolio view (always visible) ── -->
 <div id="portfolio-view">
-  <!-- ΓöÇΓöÇ Title row ΓöÇΓöÇ -->
+  <!-- ── Title row ── -->
   <div id="port-header">
     <div id="port-title-row">
       <span class="port-title-text">&#9672; PORTFOLIO</span>
-      <span id="psum-port" class="num">ΓÇö</span>
+      <span id="psum-port" class="num">—</span>
     </div>
     <div id="port-summary-row">
       <span class="port-summ-lbl">EQUITY</span>
-      <span id="psum-mktval" class="num">ΓÇö</span>
+      <span id="psum-mktval" class="num">—</span>
       <span id="psum-invest-pct" class="port-summ-dim"></span>
       <span class="port-summ-sep">|</span>
       <span class="port-summ-lbl">CASH</span>
-      <span id="psum-cash" class="num">ΓÇö</span>
+      <span id="psum-cash" class="num">—</span>
       <span id="psum-cash-pct" class="port-summ-dim"></span>
     </div>
     <div id="port-summary-row2">
       <span class="port-summ-lbl">TOTAL P&amp;L</span>
-      <span id="psum-total" class="num">ΓÇö</span>
+      <span id="psum-total" class="num">—</span>
       <span class="port-summ-sep">|</span>
       <span class="port-summ-lbl">UNREAL</span>
-      <span id="psum-unreal" class="num">ΓÇö</span>
+      <span id="psum-unreal" class="num">—</span>
       <span class="port-summ-sep">|</span>
       <span class="port-summ-lbl">REALISED</span>
-      <span id="psum-real" class="num">ΓÇö</span>
+      <span id="psum-real" class="num">—</span>
     </div>
   </div>
 
-  <!-- ΓöÇΓöÇ Positions table ΓöÇΓöÇ -->
+  <!-- ── Positions table ── -->
   <table id="port-table">
     <thead>
       <tr>
         <th class="sortable" data-col="symbol" onclick="_portSort('symbol')"><span id="port-sym-hdr" onclick="_portToggleSymName();event.stopPropagation()" class="port-sym-toggle" title="Toggle symbol/name">SYM</span><span id="sort-ind-symbol" class="sort-ind"></span></th>
-        <th class="sortable" id="th-status" onclick="_portCycleStatus()" title="Click to filter: ALL ΓåÆ OPEN ΓåÆ CLOSED">STATUS<span id="status-filter-ind"> [ALL]</span></th>
+        <th class="sortable" id="th-status" onclick="_portCycleStatus()" title="Click to filter: ALL → OPEN → CLOSED">STATUS<span id="status-filter-ind"> [ALL]</span></th>
         <th class="sortable" data-col="open_shares"  onclick="_portSort('open_shares')">SHARES<span id="sort-ind-open_shares" class="sort-ind"></span></th>
         <th class="sortable" data-col="avg_cost"     onclick="_portSort('avg_cost')">AVG COST &#8377;<span id="sort-ind-avg_cost" class="sort-ind"></span></th>
         <th class="sortable" data-col="ltp"          onclick="_portSort('ltp')">LTP &#8377;<span id="sort-ind-ltp" class="sort-ind"></span></th>
@@ -370,7 +370,7 @@
     <tfoot id="port-tfoot"></tfoot>
   </table>
 
-  <!-- ΓöÇΓöÇ Action buttons + expandable panel ΓöÇΓöÇ -->
+  <!-- ── Action buttons + expandable panel ── -->
   <div id="port-actions">
     <button class="port-action-btn buy"       onclick="_portOpenAction('buy')">&#9650; BUY</button>
     <button class="port-action-btn sell"      onclick="_portOpenAction('sell')">&#9660; SELL</button>
@@ -404,11 +404,11 @@
     </span>
   </div>
 
-  <!-- ΓöÇΓöÇ Cash ledger panel ΓöÇΓöÇ -->
+  <!-- ── Cash ledger panel ── -->
   <div id="port-cash-panel">
     <div id="port-cash-hdr" onclick="_portToggleCashPanel()">
       <span class="cash-title">&#9650; CASH LEDGER</span>
-      <span id="port-cash-bal">ΓÇö</span>
+      <span id="port-cash-bal">—</span>
       <span class="cash-chevron" id="cash-chevron">&#9660;</span>
     </div>
     <div id="port-cash-body">
@@ -428,11 +428,11 @@
     </div>
   </div>
 
-  <!-- ΓöÇΓöÇ Corporate Actions panel ΓöÇΓöÇ -->
+  <!-- ── Corporate Actions panel ── -->
   <div id="port-ca-panel">
     <div id="port-ca-hdr" onclick="_portToggleCaPanel()">
       <span class="ca-title">&#9650; CORPORATE ACTIONS</span>
-      <span id="port-ca-count" style="color:#1a4060;font-size:9px">ΓÇö</span>
+      <span id="port-ca-count" style="color:#1a4060;font-size:9px">—</span>
       <span class="ca-chevron" id="ca-chevron">&#9660;</span>
     </div>
     <div id="port-ca-body">
@@ -472,12 +472,12 @@
 </div><!-- /#portfolio-view -->
 
 <script>
-// ΓöÇΓöÇ UTILITIES ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── UTILITIES ────────────────────────────────────────────────
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 function escId(s)  { return String(s).replace(/[^A-Za-z0-9_-]/g,'_'); }
 
-// ΓöÇΓöÇ CLOCK + MARKET STATUS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── CLOCK + MARKET STATUS ────────────────────────────────────
 function isMarketOpen(){
   const ist = new Date(Date.now() + 330*60000);
   const dow = ist.getUTCDay();
@@ -485,18 +485,18 @@ function isMarketOpen(){
   const m = ist.getUTCHours()*60 + ist.getUTCMinutes();
   return m >= 555 && m <= 930;
 }
-// ΓöÇΓöÇ BACK BUTTON ΓÇö port-aware ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── BACK BUTTON — port-aware ──────────────────────────────────
 (function(){
   const btn  = document.getElementById('pph-back-btn');
   const port = parseInt(window.location.port, 10) || 80;
   if (port === 5001) {
     // Standalone mode: just close the window
-    btn.textContent = 'Γ£ò  CLOSE';
+    btn.textContent = '✕  CLOSE';
     btn.href = '#';
     btn.addEventListener('click', function(e){ e.preventDefault(); window.close(); });
   } else {
     // Opened from launchpad (port 5000)
-    btn.textContent = 'Γùä LAUNCHPAD';
+    btn.textContent = '◄ LAUNCHPAD';
     btn.href = '#';
     btn.addEventListener('click', function(e){
       e.preventDefault();
@@ -511,12 +511,12 @@ function isMarketOpen(){
   const now   = new Date();
   const p     = n => String(n).padStart(2,'0');
   if(el)    el.textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
-  if(badge){ badge.textContent = isMarketOpen() ? 'ΓùÅ OPEN' : 'ΓùÅ CLOSED';
+  if(badge){ badge.textContent = isMarketOpen() ? '● OPEN' : '● CLOSED';
              badge.className   = isMarketOpen() ? 'open' : 'closed'; }
   setTimeout(clockLoop, 1000);
 })();
 
-// ΓöÇΓöÇ PORTFOLIO STATE ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── PORTFOLIO STATE ──────────────────────────────────────────
 let _portExch         = 'nse';
 let _portShowName     = false;
 let _portStatusFilter = 'all';   // 'all' | 'open' | 'closed'
@@ -547,7 +547,7 @@ function _portSort(col){
     _portSortCol = col; _portSortDir = 1;
   }
   const ind = document.getElementById(`sort-ind-${col}`);
-  if(ind) ind.textContent = _portSortDir===1 ? ' Γû▓' : ' Γû╝';
+  if(ind) ind.textContent = _portSortDir===1 ? ' ▲' : ' ▼';
   _portRender(_portLastData);
 }
 function _portToggleExch(){
@@ -585,7 +585,7 @@ function _portOpenAction(type){
     _cashType = type==='deposit' ? 'deposit' : 'withdrawal';
     const btn = document.getElementById('cash-submit-btn');
     if(btn) btn.textContent = type==='deposit' ? 'DEPOSIT' : 'WITHDRAW';
-    if(lbl) lbl.textContent = type==='deposit' ? '+ CASH IN' : 'ΓêÆ CASH OUT';
+    if(lbl) lbl.textContent = type==='deposit' ? '+ CASH IN' : '− CASH OUT';
     const cd = document.getElementById('cash-date-inp');
     if(cd && !cd.value) cd.value = new Date().toISOString().slice(0,10);
     setTimeout(()=>document.getElementById('cash-amt-inp')?.focus(), 50);
@@ -610,7 +610,7 @@ function _portToggleCashPanel(){
   if(open) pollCash();
 }
 
-// ΓöÇΓöÇ POLL PORTFOLIO ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── POLL PORTFOLIO ───────────────────────────────────────────
 async function pollPortfolio(){
   try{
     const res = await fetch('/api/portfolio'); if(!res.ok) return;
@@ -757,8 +757,8 @@ function _portRender(data){
     </tr>`;
   }
 
-  // ΓöÇΓöÇ Summary bar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  const fmtI2 = n => n==null?'ΓÇö':Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0});
+  // ── Summary bar ──────────────────────────────────────────
+  const fmtI2 = n => n==null?'—':Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0});
   const setNum = (id,val,signed)=>{
     const el=document.getElementById(id); if(!el) return;
     el.textContent = (signed&&val!=null&&val>=0?'+':'')+fmtI2(val);
@@ -772,12 +772,12 @@ function _portRender(data){
   setNum('psum-port',    totals.portfolio_total, false);
   const ipEl = document.getElementById('psum-invest-pct');
   const cpEl = document.getElementById('psum-cash-pct');
-  if(ipEl) ipEl.textContent = `INVESTED ${tot.invested_pct!=null?tot.invested_pct.toFixed(1):'ΓÇö'}%`;
-  if(cpEl) cpEl.textContent = `CASH ${tot.cash_pct!=null?tot.cash_pct.toFixed(1):'ΓÇö'}%`;
+  if(ipEl) ipEl.textContent = `INVESTED ${tot.invested_pct!=null?tot.invested_pct.toFixed(1):'—'}%`;
+  if(cpEl) cpEl.textContent = `CASH ${tot.cash_pct!=null?tot.cash_pct.toFixed(1):'—'}%`;
 
   if(tot.cash_balance!=null){
     const cb = document.getElementById('port-cash-bal');
-    if(cb){ cb.textContent = 'Γé╣ '+fmtI2(tot.cash_balance);
+    if(cb){ cb.textContent = '₹ '+fmtI2(tot.cash_balance);
       cb.className = tot.cash_balance>=0?'up':'down'; }
   }
 }
@@ -790,7 +790,7 @@ function _portToggleTx(sym){
   if(btn) btn.classList.toggle('open', open);
 }
 
-// ΓöÇΓöÇ CASH LEDGER ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── CASH LEDGER ─────────────────────────────────────────────
 function _cashEditToggleType(btn){
   btn.dataset.t = btn.dataset.t==='deposit' ? 'withdrawal' : 'deposit';
   btn.textContent = btn.dataset.t.toUpperCase();
@@ -834,7 +834,7 @@ async function pollCash(){
     const data = await res.json();
     const fmtI = n => Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
     const cb = document.getElementById('port-cash-bal');
-    if(cb){ cb.textContent = 'Γé╣ '+fmtI(data.balance);
+    if(cb){ cb.textContent = '₹ '+fmtI(data.balance);
       cb.className = data.balance>=0?'up':'down'; }
     const tbody = document.getElementById('cash-tbody');
     if(!tbody) return;
@@ -850,7 +850,7 @@ async function pollCash(){
         <td style="color:#446688">${escHtml(tx.note||'')}</td>
         <td style="color:#668">${fmtI(running)}</td>
         <td style="white-space:nowrap">
-          <span class="cash-edit" onclick="_portEditCash(${i},'${tx.date||''}','${tx.type}',${tx.amount},'${(tx.note||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}') " title="Edit">Γ£Ä</span>
+          <span class="cash-edit" onclick="_portEditCash(${i},'${tx.date||''}','${tx.type}',${tx.amount},'${(tx.note||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}') " title="Edit">✎</span>
           <span class="cash-del"  onclick="removeCashTx(${i})" title="Delete">&#10005;</span>
         </td>
       </tr>`;
@@ -859,7 +859,7 @@ async function pollCash(){
   }catch(e){ console.error('Cash poll error:',e); }
 }
 
-// ΓöÇΓöÇ CORPORATE ACTIONS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── CORPORATE ACTIONS ─────────────────────────────────────────
 const CA_TYPE_LABELS = {
   merger:'MERGER', amalgamation:'AMALGAMATION', name_change:'NAME CHG',
   demerger:'DEMERGER', spinoff:'SPIN-OFF', 'spin-off':'SPIN-OFF',
@@ -882,7 +882,7 @@ function _caFormUpdate(){
   document.getElementById('ca-cross-span').style.display = isCross ? '' : 'none';
   const ri = document.getElementById('ca-ratio-inp');
   if(ri){
-    if(type==='split'||type==='subdivision') ri.placeholder='N (1ΓåÆN)';
+    if(type==='split'||type==='subdivision') ri.placeholder='N (1→N)';
     else if(type==='bonus') ri.placeholder='X per 1';
     else if(type==='merger'||type==='amalgamation') ri.placeholder='new/old';
     else ri.placeholder='ratio';
@@ -1017,29 +1017,29 @@ async function importYahooCsv(input){
   if(!file) return;
   const msg = document.getElementById('port-import-msg');
   msg.style.color = '#888';
-  msg.textContent = 'ImportingΓÇª';
+  msg.textContent = 'Importing…';
   try {
     const fd = new FormData();
     fd.append('csv_file', file);
     const res  = await fetch('/api/portfolio/import_yahoo_csv', {method:'POST', body:fd});
     const data = await res.json();
     if(res.ok){
-      let txt = `Γ£ô ${data.imported} tx ┬╖ ${data.new_symbols} new symbol(s)`;
-      if(data.cash_imported > 0) txt += ` ┬╖ ${data.cash_imported} cash tx`;
+      let txt = `✓ ${data.imported} tx · ${data.new_symbols} new symbol(s)`;
+      if(data.cash_imported > 0) txt += ` · ${data.cash_imported} cash tx`;
       if(data.stubs > 0){
-        txt += ` ┬╖ ΓÜá ${data.stubs} symbol(s) need manual entry: ${(data.needs_data||[]).join(', ')}`;
+        txt += ` · ⚠ ${data.stubs} symbol(s) need manual entry: ${(data.needs_data||[]).join(', ')}`;
       }
-      if(data.skipped > 0) txt += ` ┬╖ ${data.skipped} skipped`;
+      if(data.skipped > 0) txt += ` · ${data.skipped} skipped`;
       msg.style.color = data.stubs > 0 ? '#cc8833' : '#00cc66';
       msg.textContent = txt;
       pollPortfolio();
     } else {
       msg.style.color = '#ff5555';
-      msg.textContent = 'Γ£ù ' + (data.error || 'Import failed');
+      msg.textContent = '✗ ' + (data.error || 'Import failed');
     }
   } catch(e) {
     msg.style.color = '#ff5555';
-    msg.textContent = 'Γ£ù Network error';
+    msg.textContent = '✗ Network error';
   } finally {
     input.value = '';
   }
@@ -1079,7 +1079,7 @@ async function _portSaveEditTx(sym, idx){
   if(res.ok) pollPortfolio();
 }
 
-// ΓöÇΓöÇ AUTO-START ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── AUTO-START ───────────────────────────────────────────────
 pollPortfolio();
 pollCash();
 setInterval(pollPortfolio, 30000);
