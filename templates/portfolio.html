@@ -257,7 +257,9 @@
     .cg-stcg { color:#ee9933 !important; font-weight:700; font-size:9px; letter-spacing:1px; }
     .cg-ltcg { color:#33bbee !important; font-weight:700; font-size:9px; letter-spacing:1px; }
     .cg-gf   { color:#cc9944; font-size:7px; vertical-align:super; margin-left:1px; }
-    .cg-unreal-row td { opacity:0.65; font-style:italic; }
+    .cg-realized-row td { opacity:0.5; color:#556677 !important; }
+    .cg-realized-row .cg-stcg,.cg-realized-row .cg-ltcg { color:#6688aa !important; }
+    .cg-anomaly-badge { color:#ff6644; font-size:9px; margin-left:3px; cursor:help; }
     #cg-fy-summary { margin-top:12px; }
     #cg-fy-summary table { width:100%; border-collapse:collapse; font-size:10px; background:#0a1624; }
     #cg-fy-summary th { color:#446688; font-size:8px; letter-spacing:1px; padding:4px 7px;
@@ -1480,14 +1482,31 @@ function _cgRender(data){
       const gCls   = cc(ev.gross_gain);
       const aCls   = cc(ev.after_tax_gain);
       const sh     = ev.shares%1===0 ? ev.shares : Number(ev.shares).toFixed(4);
-      const unrLbl = ev.is_unrealized ? '<span style="font-size:8px;color:#33aadd;margin-left:4px;font-style:normal">OPEN</span>' : '';
-      const rowCls = ev.is_unrealized ? ' class="cg-unreal-row"' : '';
-      // Grandfathered FMV column — Jan 31 2018 price
-      const gfFmv  = ev.grandfathered_fmv != null
-        ? `<span style="color:#ddaa55" title="Jan 31 2018 FMV (grandfathered cost basis)">${fmt(ev.grandfathered_fmv)}</span>`
-        : '<span style="color:#2a3a4a">—</span>';
+      // Realized rows are historical — grey them. Unrealized (open) are current — keep bright.
+      const unrLbl = ev.is_unrealized ? '<span style="font-size:8px;color:#33aadd;margin-left:4px">OPEN</span>' : '';
+      const rowCls = ev.is_unrealized ? '' : ' class="cg-realized-row"';
+      // GF FMV column — show raw bhavcopy price; if CA-adjusted differs, show both
+      let gfFmv = '<span style="color:#2a3a4a">—</span>';
+      if (ev.grandfathered_fmv != null) {
+        const rawPr = ev.gf_raw_price != null && Math.abs(ev.gf_raw_price - ev.grandfathered_fmv) > 0.05
+          ? ` <span title="Raw Jan-31-2018 price: ${fmt(ev.gf_raw_price)}" style="font-size:8px;color:#997733">(raw:${fmt(ev.gf_raw_price)})</span>`
+          : '';
+        gfFmv = `<span style="color:#ddaa55" title="Jan 31 2018 GF FMV (CA-adjusted cost basis)">${fmt(ev.grandfathered_fmv)}</span>${rawPr}`;
+      } else if (ev.gf_raw_price != null) {
+        // GF price available but not triggered (short holding or not LTCG)
+        gfFmv = `<span style="color:#667788" title="Jan 31 2018 BSE close (GF not applied — STCG or actual cost higher)">${fmt(ev.gf_raw_price)}</span>`;
+      }
+      // Anomaly badge
+      let anomBadge = '';
+      if (ev.gf_anomaly === 'sharp_decline') {
+        anomBadge = '<span class="cg-anomaly-badge" title="Current price far below Jan-2018 GF value — possible unrecorded splits, bonus, or fundamental collapse">⚠️</span>';
+      } else if (ev.gf_anomaly === 'ca_anomaly') {
+        anomBadge = '<span class="cg-anomaly-badge" title="GF cost exceeds raw bhavcopy price — check corporate action adjustments">⚠️</span>';
+      } else if (ev.gf_anomaly === 'sharp_rise') {
+        anomBadge = '<span class="cg-anomaly-badge" title="Current price far above Jan-2018 value — possible unrecorded splits/bonus increasing share count">⚠️</span>';
+      }
       return `<tr${rowCls}>
-        <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${unrLbl}</td>
+        <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${anomBadge}${unrLbl}</td>
         <td style="font-size:8px;color:#446688">${ev.jurisdiction}</td>
         <td style="color:#7799aa">${ev.buy_date||'--'}</td>
         <td style="color:#7799aa">${ev.is_unrealized?'<i style="color:#33aadd">today</i>':ev.sell_date||'--'}</td>

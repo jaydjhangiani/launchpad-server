@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "date": "2018-01-31",
+    "description": "BSE closing prices on Jan 31 2018 — India LTCG grandfathering date (Finance Act 2018, Budget 2018-19). Prices are per SEBI/BSE bhavcopy. Use max(actual_cost, gf_price_adj) as cost basis for computing LTCG on pre-2018 lots.",
+    "note": "Prices are RAW bhavcopy closes. The CG engine adjusts them for splits/bonuses via corporate_actions. Any mismatch between gf_price_raw and the CA-adjusted value signals a recorded corporate action post-2018.",
+    "source": "BSE bhavcopy bse_clean_20180131.csv"
+  },
+  "HINDUNILVR": { "price": 1369.65, "bse_name": "HIND UNI LT",   "bse_code": "500696" },
+  "ICICIGI":    { "price": 787.00,  "bse_name": "ICICIGI",        "bse_code": "540716" },
+  "ARE&M":      { "price": 807.75,  "bse_name": "AMAR RAJA BA",   "bse_code": "500008", "note": "Amara Raja Batteries — renamed to ARE&M (Amara Raja Energy & Mobility)" },
+  "KIRLOSBROS": { "price": 346.15,  "bse_name": "KIRL.BROS.",     "bse_code": "500241" },
+  "INDHOTEL":   { "price": 137.75,  "bse_name": "INDIAN HOTEL",   "bse_code": "500850" },
+  "TCS":        { "price": 3111.75, "bse_name": "TCS LTD.",       "bse_code": "532540" },
+  "BHARATFORG": { "price": 717.25,  "bse_name": "BHARAT FORGE",   "bse_code": "500493" },
+  "POWERGRID":  { "price": 193.50,  "bse_name": "POWER GRID",     "bse_code": "532898" },
+  "NTPC":       { "price": 170.25,  "bse_name": "NTPC LTD",       "bse_code": "532555" },
+  "JETAIRWAYS": { "price": 753.65,  "bse_name": "JETAIRWAYS",     "bse_code": "532617", "note": "Suspended/bankrupt — GF price may not be meaningful" },
+  "FRETAIL":    { "price": 559.15,  "bse_name": "FRETAIL",        "bse_code": "540064", "note": "Future Retail — under insolvency proceedings" },
+  "FLFL":       { "price": 368.80,  "bse_name": "FUTLIF FAS",     "bse_code": "536507", "note": "Future Lifestyle Fashions" },
+  "FEL":        { "price": 42.75,   "bse_name": "FEL",            "bse_code": "523574", "note": "Future Enterprises Ltd" },
+  "PRAXIS":     { "price": 285.00,  "bse_name": "PRAXIS",         "bse_code": "540901" },
+  "POONAWALLA": { "price": 159.95,  "bse_name": "MAGMA FIN",      "bse_code": "524000", "note": "Formerly Magma Fincorp — renamed Poonawalla Fincorp 2021" },
+  "IDFCFIRSTB": { "price": 56.65,   "bse_name": "IDFCBANK",       "bse_code": "539437", "note": "Predecessor: IDFC Bank. Merged with Capital First Dec 2018 to form IDFC First Bank" },
+  "TATASTLLP":  { "price": 1076.10, "bse_name": "TATA SPONGE",    "bse_code": "513010", "note": "Formerly Tata Sponge Iron — renamed Tata Steel Long Products 2019" },
+  "IDFC":       { "price": 56.25,   "bse_name": "IDFC",           "bse_code": "532659" },
+  "PGHH":       { "price": 9244.10, "bse_name": "PROCTER &GAM",   "bse_code": "500459", "note": "Not pre-GF eligible (bought 2026)" }
+}

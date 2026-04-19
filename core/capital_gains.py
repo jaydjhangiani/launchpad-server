@@ -25,8 +25,28 @@ All monetary amounts in the entry's native currency (INR for IN, USD for US, etc
 from __future__ import annotations
 
 import datetime
+import json
+import os
 from collections import defaultdict
 from typing import Any
+
+# ---------------------------------------------------------------------------
+# Jan 31, 2018 BSE bhavcopy GF prices — auto-loaded once
+# ---------------------------------------------------------------------------
+_GF_DATE = "2018-01-31"   # India LTCG grandfathering date
+
+def _load_gf_prices() -> dict[str, float]:
+    """Load the BSE Jan 31 2018 closing prices from bse_gf_prices.json."""
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(here, "bse_gf_prices.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return {k: float(v["price"]) for k, v in data.items() if isinstance(v, dict) and "price" in v}
+    except Exception:
+        return {}
+
+_BSE_GF_PRICES: dict[str, float] = _load_gf_prices()
 
 # ---------------------------------------------------------------------------
 # Holding-period thresholds  (days; 0 = no distinction — treat all as "long")
@@ -187,6 +207,10 @@ def compute_cg_events(
                         lot["grandfathered_cost_per_share"] = float(gf)
                     except (TypeError, ValueError):
                         pass
+                elif jur == "IN" and ev_date <= _GF_DATE and sym in _BSE_GF_PRICES:
+                    # Auto-inject Jan 31 2018 BSE FMV as grandfathered cost basis
+                    lot["grandfathered_cost_per_share"] = _BSE_GF_PRICES[sym]
+                    lot["gf_auto_injected"] = True   # flag for anomaly checks
                 lots.append(lot)
 
             elif tx_type == "sell":
@@ -215,6 +239,22 @@ def compute_cg_events(
                     fy    = _fiscal_year(ev_date, jur)
                     exempt = _ltcg_exempt_for(jur, ev_date) if period == "long" else 0.0
 
+                    # Anomaly: compare raw GF price vs CA-adjusted GF price
+                    gf_raw   = _BSE_GF_PRICES.get(sym) if jur == "IN" else None
+                    gf_anomaly = None
+                    if gf_raw and gf_cost:
+                        ratio = gf_raw / float(gf_cost)
+                        if ratio > 1.15:
+                            gf_anomaly = "ca_applied"   # CAs reduced the GF cost — expected
+                        elif ratio < 0.85:
+                            gf_anomaly = "ca_anomaly"   # GF cost higher than raw — unexpected
+                    # Price-movement check: sell price far from raw GF (suggests splits/bankruptcy)
+                    if gf_anomaly is None and gf_raw and lot["date"] <= _GF_DATE:
+                        if price < gf_raw * 0.1:
+                            gf_anomaly = "sharp_decline"  # sell/current << GF — check CAs/splits
+                        elif price > gf_raw * 15:
+                            gf_anomaly = "sharp_rise"     # sell/current >> GF — check splits
+
                     events.append({
                         "symbol":                    sym,
                         "jurisdiction":              jur,
@@ -226,14 +266,16 @@ def compute_cg_events(
                         "buy_cost_per_share":        round(lot["cost_per_share"], 4),
                         "effective_cost_per_share":  round(eff_cost, 4),
                         "grandfathered_fmv":         round(float(gf_cost), 4) if is_gf and gf_cost else None,
+                        "gf_raw_price":              round(gf_raw, 4) if gf_raw else None,
+                        "gf_anomaly":                gf_anomaly,
                         "sell_price_per_share":      round(price, 4),
                         "sell_charges_per_share":    round(sell_ch_ps, 4),
                         "holding_days":              days,
-                        "holding_period":            period,   # "short" | "long"
+                        "holding_period":            period,
                         "gross_gain":                gross,
                         "tax_rate_pct":              rate,
-                        "ltcg_exempt_annual":        exempt,   # FY-level; applied in summary
-                        "estimated_tax":             tax,      # pre-exemption, for display
+                        "ltcg_exempt_annual":        exempt,
+                        "estimated_tax":             tax,
                         "after_tax_gain":            round(gross - tax, 2),
                         "fy":                        fy,
                         "is_grandfathered":          is_gf,
@@ -295,6 +337,21 @@ def compute_cg_events(
             fy    = _fiscal_year(today_str, jur)
             exempt = _ltcg_exempt_for(jur, today_str) if period == "long" else 0.0
 
+            # Anomaly check for unrealized lots
+            gf_raw   = _BSE_GF_PRICES.get(sym) if jur == "IN" else None
+            gf_anomaly = None
+            if gf_raw and gf_cost:
+                ratio = gf_raw / float(gf_cost)
+                if ratio > 1.15:
+                    gf_anomaly = "ca_applied"
+                elif ratio < 0.85:
+                    gf_anomaly = "ca_anomaly"
+            if gf_anomaly is None and gf_raw and lot["date"] <= _GF_DATE:
+                if current_price < gf_raw * 0.1:
+                    gf_anomaly = "sharp_decline"
+                elif current_price > gf_raw * 15:
+                    gf_anomaly = "sharp_rise"
+
             events.append({
                 "symbol":                    sym,
                 "jurisdiction":              jur,
@@ -306,6 +363,8 @@ def compute_cg_events(
                 "buy_cost_per_share":        round(lot["cost_per_share"], 4),
                 "effective_cost_per_share":  round(eff_cost, 4),
                 "grandfathered_fmv":         round(float(gf_cost), 4) if is_gf and gf_cost else None,
+                "gf_raw_price":              round(gf_raw, 4) if gf_raw else None,
+                "gf_anomaly":                gf_anomaly,
                 "sell_price_per_share":      round(current_price, 4),
                 "sell_charges_per_share":    0.0,
                 "holding_days":              days,
