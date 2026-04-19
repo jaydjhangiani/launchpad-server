@@ -69,6 +69,9 @@
     }
     .open   { background: #003318; color: #00ff88; border: 1px solid #00cc66; }
     .closed { background: #330000; color: #ff4444; border: 1px solid #cc0000; }
+    /* panel body panels use .open only for display:block — reset background for those */
+    #port-cash-body.open, #port-ca-body.open, #port-cg-body.open,
+    #port-table tbody tr.port-tx-section.open { background: unset; color: unset; border: unset; }
     #pph-clock { color: var(--panel-accent); font-size: 11px; white-space: nowrap; }
     .pph-back {
       color: #334455;
@@ -244,12 +247,12 @@
       border-bottom:1px solid #1a2a40; text-align:right; white-space:nowrap; }
     #cg-table th:first-child,#cg-table th:nth-child(2),
     #cg-table th:nth-child(3),#cg-table th:nth-child(4),
-    #cg-table th:nth-child(9),#cg-table th:last-child { text-align:left; }
+    #cg-table th:nth-child(10),#cg-table th:last-child { text-align:left; }
     #cg-table td { padding:3px 6px; border-bottom:1px solid #0d1a28;
       text-align:right; white-space:nowrap; color:#99aabb; }
     #cg-table td:first-child,#cg-table td:nth-child(2),
     #cg-table td:nth-child(3),#cg-table td:nth-child(4),
-    #cg-table td:nth-child(9),#cg-table td:last-child { text-align:left; }
+    #cg-table td:nth-child(10),#cg-table td:last-child { text-align:left; }
     #cg-table tr:hover td { background:#0e1e2e; }
     .cg-stcg { color:#ee9933 !important; font-weight:700; font-size:9px; letter-spacing:1px; }
     .cg-ltcg { color:#33bbee !important; font-weight:700; font-size:9px; letter-spacing:1px; }
@@ -609,7 +612,7 @@
           <div class="cg-card-val" id="cgc-uafter">&#8212;</div>
         </div>
         <div id="cg-controls">
-          <label style="font-size:8px;color:#0a2535;cursor:pointer">
+          <label style="font-size:8px;color:#556688;cursor:pointer">
             <input type="checkbox" id="cg-show-unreal" checked onchange="_cgFilterFy(_cgFyFilter)"
               style="margin-right:3px;accent-color:#00aacc" />
             SHOW OPEN
@@ -624,7 +627,7 @@
       <table id="cg-table">
         <thead><tr>
           <th>SYM</th><th>JUR</th><th>BUY DATE</th><th>SELL DATE</th>
-          <th>SHARES</th><th>COST/SH</th><th>SELL/SH</th>
+          <th>SHARES</th><th>COST/SH</th><th>GF FMV (31-Jan-18)</th><th>SELL/SH</th>
           <th>DAYS</th><th>TYPE</th>
           <th>GROSS GAIN</th><th>TAX%</th><th>EST. TAX</th><th>AFTER-TAX</th>
           <th>FY</th>
@@ -1468,7 +1471,7 @@ function _cgRender(data){
   if(!vis.length){
     const msg = !showUnreal ? 'NO REALISED EVENTS — TOGGLE "SHOW OPEN" TO SEE UNREALISED'
                             : 'NO CAPITAL GAINS EVENTS';
-    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:#446688;padding:14px;letter-spacing:1px">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="16" style="text-align:center;color:#446688;padding:14px;letter-spacing:1px">${msg}</td></tr>`;
   } else {
     tbody.innerHTML = vis.map(ev=>{
       const isLT   = ev.holding_period === 'long';
@@ -1476,17 +1479,21 @@ function _cgRender(data){
       const tLbl   = isLT ? 'LTCG' : 'STCG';
       const gCls   = cc(ev.gross_gain);
       const aCls   = cc(ev.after_tax_gain);
-      const gfBadge = ev.is_grandfathered ? '<span class="cg-gf" title="Grandfathered cost basis">GF</span>' : '';
       const sh     = ev.shares%1===0 ? ev.shares : Number(ev.shares).toFixed(4);
       const unrLbl = ev.is_unrealized ? '<span style="font-size:8px;color:#33aadd;margin-left:4px;font-style:normal">OPEN</span>' : '';
       const rowCls = ev.is_unrealized ? ' class="cg-unreal-row"' : '';
+      // Grandfathered FMV column — Jan 31 2018 price
+      const gfFmv  = ev.grandfathered_fmv != null
+        ? `<span style="color:#ddaa55" title="Jan 31 2018 FMV (grandfathered cost basis)">${fmt(ev.grandfathered_fmv)}</span>`
+        : '<span style="color:#2a3a4a">—</span>';
       return `<tr${rowCls}>
         <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${unrLbl}</td>
         <td style="font-size:8px;color:#446688">${ev.jurisdiction}</td>
         <td style="color:#7799aa">${ev.buy_date||'--'}</td>
         <td style="color:#7799aa">${ev.is_unrealized?'<i style="color:#33aadd">today</i>':ev.sell_date||'--'}</td>
         <td style="color:#99aabb">${sh}</td>
-        <td style="color:#889aaa">${fmt(ev.effective_cost_per_share)}${gfBadge}</td>
+        <td style="color:#889aaa">${fmt(ev.effective_cost_per_share)}</td>
+        <td>${gfFmv}</td>
         <td style="color:#889aaa">${fmt(ev.sell_price_per_share)}</td>
         <td style="color:#556677;font-size:9px">${ev.holding_days}d</td>
         <td class="${tCls}">${tLbl}</td>
