@@ -706,7 +706,7 @@ def api_portfolio_edit_tx():
     try:
         shares = float(body.get("shares", 0)); price = float(body.get("price", 0))
     except (TypeError, ValueError): return jsonify({"error": "Invalid shares or price"}), 400
-    if not symbol or shares <= 0 or price <= 0: return jsonify({"error": "Invalid input"}), 400
+    if not symbol or shares <= 0 or price < 0: return jsonify({"error": "Invalid input"}), 400
     if tx_type not in ("buy", "sell"): return jsonify({"error": "type must be buy or sell"}), 400
     entries = [_migrate_entry(e) for e in _load_portfolio()]
     entry   = next((e for e in entries if e["symbol"] == symbol), None)
