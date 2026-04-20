@@ -39,23 +39,26 @@ if _persisted_dead:
 state.dead_symbols.update(_persisted_dead)
 
 # Build panels + symbol lists entirely from NeonDB
+# Exchange routing is per-symbol (s["exchange"]), NOT per-panel.
+# Panel mode is kept only as a UI hint for which exchange to try first when adding.
 _seen_syms: set = set()
 for _db_panel in _db_panels:
     _panel_stocks = []
     _seen_panel: set = set()
     _pmode = _db_panel.get("mode", "nse")
     for s in _db_panel["stocks"]:
-        sym = s["symbol"]
+        sym  = s["symbol"]
+        exch = s.get("exchange", "nse")   # per-symbol exchange, auto-detected at add-time
         if sym not in _seen_panel:
             _seen_panel.add(sym)
             _panel_stocks.append({"symbol": sym, "name": s.get("name", sym)})
         if sym not in _seen_syms:
             _seen_syms.add(sym)
-            if _pmode == "global":
+            if exch == "global":
                 state.global_symbols.append(sym)
             else:
                 state.all_symbols.append(sym)
-                if _pmode == "bse":
+                if exch == "bse":
                     state.bse_override.add(sym)
     state.panels.append({
         "sector": _db_panel["sector_name"],

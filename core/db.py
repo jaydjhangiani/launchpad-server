@@ -75,9 +75,17 @@ def _init_db() -> None:
                     symbol      TEXT NOT NULL,
                     name        TEXT,
                     stock_order INTEGER NOT NULL DEFAULT 0,
+                    exchange    TEXT NOT NULL DEFAULT 'nse',
                     PRIMARY KEY (panel_id, symbol)
                 )
             """)
+            # Add exchange column to existing deployments (idempotent)
+            try:
+                cur.execute("SAVEPOINT add_exchange")
+                cur.execute("ALTER TABLE panel_stocks ADD COLUMN exchange TEXT NOT NULL DEFAULT 'nse'")
+                cur.execute("RELEASE SAVEPOINT add_exchange")
+            except Exception:
+                cur.execute("ROLLBACK TO SAVEPOINT add_exchange")
             # Add FK constraint so console deletes of panels cascade to stocks
             try:
                 cur.execute("SAVEPOINT add_fk")
@@ -117,14 +125,16 @@ def _load_panels_from_db() -> list:
                 "SELECT panel_id, sector_name, mode, page, height FROM panels ORDER BY display_order"
             )
             panel_rows = cur.fetchall()
-            cur.execute("SELECT panel_id, symbol, name FROM panel_stocks ORDER BY panel_id, stock_order")
+            cur.execute(
+                "SELECT panel_id, symbol, name, COALESCE(exchange,'nse') FROM panel_stocks ORDER BY panel_id, stock_order"
+            )
             stock_rows = cur.fetchall()
     stocks_by_panel: dict = {}
-    for pid, sym, name in stock_rows:
+    for pid, sym, name, exch in stock_rows:
         clean = sym
         if clean.upper().endswith(".BO"):   clean = clean[:-3]
         elif clean.upper().endswith(".NS"): clean = clean[:-3]
-        stocks_by_panel.setdefault(pid, []).append({"symbol": clean, "name": name or clean})
+        stocks_by_panel.setdefault(pid, []).append({"symbol": clean, "name": name or clean, "exchange": exch or "nse"})
     result = []
     for pid, sector_name, mode, page, height in panel_rows:
         result.append({
@@ -168,8 +178,8 @@ def _db_clear_dead(symbol: str) -> None:
 # Stock mutation helpers — direct writes, no in-memory mirror needed
 # ---------------------------------------------------------------------------
 
-def _db_add_stock(panel_id: str, symbol: str, name: str) -> None:
-    """Append a stock to panel_stocks (no-op if already present)."""
+def _db_add_stock(panel_id: str, symbol: str, name: str, exchange: str = "nse") -> None:
+    """Append a stock to panel_stocks (no-op if already present, updates exchange if it exists)."""
     with _get_conn() as con:
         with con.cursor() as cur:
             cur.execute(
@@ -178,9 +188,9 @@ def _db_add_stock(panel_id: str, symbol: str, name: str) -> None:
             )
             next_order = cur.fetchone()[0]
             cur.execute(
-                "INSERT INTO panel_stocks (panel_id, symbol, name, stock_order) VALUES (%s, %s, %s, %s) "
-                "ON CONFLICT (panel_id, symbol) DO NOTHING",
-                (panel_id, symbol, name, next_order),
+                "INSERT INTO panel_stocks (panel_id, symbol, name, stock_order, exchange) VALUES (%s, %s, %s, %s, %s) "
+                "ON CONFLICT (panel_id, symbol) DO UPDATE SET exchange = EXCLUDED.exchange",
+                (panel_id, symbol, name, next_order, exchange),
             )
 
 

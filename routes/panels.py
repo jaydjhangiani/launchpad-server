@@ -22,59 +22,65 @@ def api_add_ticker(pi: int):
     if not symbol or len(symbol) > 20:
         return jsonify({"error": "Invalid symbol"}), 400
 
-    # Auto-detect explicit exchange suffix typed by user (e.g. RELIANCE.NS or 500325.BO)
-    mode   = state.panels[pi].get("mode", "nse")
-    is_bse = False
+    # Strip any explicit suffix the user typed (.NS / .BO)
+    force_exchange = None
     if symbol.endswith(".BO"):
-        symbol = symbol[:-3]
-        is_bse = True
+        symbol = symbol[:-3]; force_exchange = "bse"
     elif symbol.endswith(".NS"):
-        symbol = symbol[:-3]
-        is_bse = False
-    elif mode == "bse":
-        is_bse = True
+        symbol = symbol[:-3]; force_exchange = "nse"
 
     existing = {s["symbol"] for s in state.panels[pi]["stocks"]}
     if symbol in existing:
         return jsonify({"error": f"{symbol} is already in this panel"}), 409
 
+    # ── Auto-detect exchange: NSE → BSE → global (regardless of panel mode) ──
     with state.cache_lock:
         cached = dict(state.price_cache.get(symbol, {}))
+
+    detected_exchange = force_exchange  # honour explicit .NS / .BO suffix
     if not cached:
-        if mode == "global":
-            result = fetch_global_batch([symbol])
-        elif is_bse:
+        if force_exchange == "bse":
             result = fetch_bse_batch([symbol])
             if not result:
                 result = fetch_symbols_batch([symbol])
-                if result:
-                    is_bse = False
-        else:
+                detected_exchange = "nse" if result else "bse"
+        elif force_exchange == "nse":
             result = fetch_symbols_batch([symbol])
-            if not result:
+        else:
+            # Try NSE first, then BSE, then global (US/indices/commodities/FX)
+            result = fetch_symbols_batch([symbol])
+            if result:
+                detected_exchange = "nse"
+            else:
                 result = fetch_bse_batch([symbol])
                 if result:
-                    is_bse = True
+                    detected_exchange = "bse"
+                else:
+                    result = fetch_global_batch([symbol])
+                    if result:
+                        detected_exchange = "global"
         if result:
             with state.cache_lock:
                 state.price_cache.update(result)
             cached = result.get(symbol, {})
 
+    if detected_exchange is None:
+        detected_exchange = "nse"   # fallback default
+
     new_stock = {"symbol": symbol, "name": symbol}
 
-    # Write to DB first — if this fails the route returns an error and state
-    # is never touched, so DB and in-memory state remain consistent.
-    _db_add_stock(state.panels[pi]["id"], symbol, symbol)
+    # Persist to DB with detected exchange — this is the source of truth at startup
+    _db_add_stock(state.panels[pi]["id"], symbol, symbol, detected_exchange)
 
     state.panels[pi]["stocks"].append(new_stock)
     with state.panels_lock:
-        if mode == "global":
+        if detected_exchange == "global":
             if symbol not in state.global_symbols:
                 state.global_symbols.append(symbol)
         else:
             if symbol not in state.all_symbols:
                 state.all_symbols.append(symbol)
-            if is_bse:
+            if detected_exchange == "bse":
                 state.bse_override.add(symbol)
             else:
                 state.bse_override.discard(symbol)
@@ -83,6 +89,7 @@ def api_add_ticker(pi: int):
     return jsonify({
         "status":     "ok",
         "symbol":     symbol,
+        "exchange":   detected_exchange,
         "price":      pdata.get("price") if pdata else None,
         "change_pct": pdata.get("change_pct") if pdata else None,
     })
