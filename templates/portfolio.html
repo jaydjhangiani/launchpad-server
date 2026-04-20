@@ -1570,6 +1570,28 @@ function _cgRender(data){
       // Realized rows are historical — grey them. Unrealized (open) are current — keep bright.
       const unrLbl = ev.is_unrealized ? '<span style="font-size:8px;color:#33aadd;margin-left:4px">OPEN</span>' : '';
       const rowCls = ev.is_unrealized ? '' : ' class="cg-realized-row"';
+      // ACQ badge (how the lot was acquired)
+      const acqBuyMap  = {secondary:'SEC',ipo:'IPO',bonus:'BONUS',rights:'RIGHTS',
+        split:'SPLIT',allotment:'ALLOT',merger:'MERGER',amalgamation:'AMAL',
+        demerger:'DEMER',spinoff:'SPINOFF',subdivision:'SPLIT',unlisted:'UNLIST'};
+      const acqSellMap = {market:'MKT',profit:'PROFIT',stoploss:'SL',rebalance:'REBAL',
+        exit:'EXIT',partial:'PART',rights:'RIGHTS',merger:'MERGER',
+        amalgamation:'AMAL',demerger:'DEMER',spinoff:'SPINOFF'};
+      const _CA_TYPES  = new Set(['bonus','split','merger','amalgamation','demerger','spinoff','rights','subdivision']);
+      const acqKey     = (ev.acquisition_type||'secondary').toLowerCase().replace(/[-_]/g,'');
+      const acqLbl     = acqBuyMap[acqKey] || acqKey.toUpperCase();
+      const acqCls     = 'acq-'+acqKey;
+      const acqTip     = _CA_TYPES.has(acqKey) ? `CA-linked acquisition: ${acqKey}` : `Acquired via: ${acqKey}`;
+      const acqBadge   = `<span class="acq-badge ${acqCls}" title="${acqTip}">${acqLbl}</span>`;
+      // SOLD badge (why the shares were sold — only for realized events)
+      let soldBadge = '';
+      if(!ev.is_unrealized && ev.sell_reason){
+        const srKey = ev.sell_reason.toLowerCase().replace(/[-_]/g,'');
+        const srLbl = acqSellMap[srKey] || srKey.toUpperCase();
+        const srCls = 'acq-'+srKey;
+        const srTip = _CA_TYPES.has(srKey) ? `CA-linked sale: ${srKey}` : `Sold for: ${srKey}`;
+        soldBadge   = `<span class="acq-badge ${srCls}" title="${srTip}" style="margin-left:2px">${srLbl}</span>`;
+      }
       // GF FMV column — show raw bhavcopy price; if CA-adjusted differs, show both
       let gfFmv = '<span style="color:#2a3a4a">—</span>';
       if (ev.grandfathered_fmv != null) {
@@ -1591,10 +1613,10 @@ function _cgRender(data){
         anomBadge = '<span class="cg-anomaly-badge" title="Current price far above Jan-2018 value — possible unrecorded splits/bonus increasing share count">⚠️</span>';
       }
       return `<tr${rowCls}>
-        <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${anomBadge}${unrLbl}</td>
+        <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${acqBadge}${anomBadge}${unrLbl}</td>
         <td style="font-size:8px;color:#446688">${ev.jurisdiction}</td>
         <td style="color:#7799aa">${ev.buy_date||'--'}</td>
-        <td style="color:#7799aa">${ev.is_unrealized?'<i style="color:#33aadd">today</i>':ev.sell_date||'--'}</td>
+        <td style="color:#7799aa">${ev.is_unrealized?'<i style="color:#33aadd">today</i>':(ev.sell_date||'--')}${soldBadge}</td>
         <td style="color:#99aabb">${sh}</td>
         <td style="color:#889aaa">${fmt(ev.effective_cost_per_share)}</td>
         <td>${gfFmv}</td>

@@ -328,36 +328,84 @@ _ACQ_ZERO_COST = {"bonus", "split", "subdivision", "rights", "allotment",
                   "merger", "amalgamation", "demerger", "spinoff", "spin-off"}
 
 def _infer_acquisition_type(tx: dict, sym: str, ca_list: list) -> str:
-    """Return acquisition_type string. Infers from price=0 + CA list if not set."""
+    """Return acquisition_type string for a transaction.
+
+    Priority:
+      1. Explicitly stored value on the tx.
+      2. Cross-symbol CA match — sell side (from_symbol == sym) → merger/demerger/spinoff
+      3. Cross-symbol CA match — buy side  (to_symbol   == sym) → merger/demerger/spinoff
+      4. Intra-symbol CA match for zero-cost buy  (symbol == sym) → bonus/split/rights/…
+      5. Fallback defaults: sell→"market", zero-cost buy→"allotment", buy→"secondary"
+    """
     stored = (tx.get("acquisition_type") or "").strip().lower()
     if stored:
         return stored
+
     ttype = tx.get("type", "buy").lower()
-    if ttype == "sell":
-        return "market"   # default sell reason
-    price = float(tx.get("price", 0) or 0)
     date  = tx.get("date", "")
-    if price == 0:
-        # Look for a matching intra-symbol CA on or near this date (±30 days)
-        from datetime import timedelta
-        try:
-            tx_d = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            return "allotment"
+    price = float(tx.get("price", 0) or 0)
+
+    try:
+        tx_d = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        return "market" if ttype == "sell" else ("allotment" if price == 0 else "secondary")
+
+    _CROSS_TYPES = ("merger", "amalgamation", "demerger", "spinoff", "spin-off")
+    _INTRA_TYPES = ("bonus", "split", "subdivision", "rights")
+
+    def _normalise(t: str) -> str:
+        return "spinoff" if t == "spin-off" else t
+
+    if ttype == "sell":
+        # Check if sym is the FROM side of a cross-symbol corporate action (forced exit)
         for ca in ca_list:
-            if str(ca.get("symbol", "")).strip().upper() != sym:
-                continue
             ca_type = ca.get("type", "").lower()
-            if ca_type not in ("bonus", "split", "subdivision", "rights",
-                               "merger", "amalgamation", "demerger", "spinoff", "spin-off"):
+            if ca_type not in _CROSS_TYPES:
+                continue
+            from_sym = str(ca.get("from_symbol", ca.get("symbol", ""))).strip().upper()
+            if from_sym != sym:
+                continue
+            try:
+                ca_d = datetime.strptime(ca.get("date", ""), "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if abs((tx_d - ca_d).days) <= 60:
+                return _normalise(ca_type)
+        return "market"
+
+    # --- Buy ---
+    # 1. Check if sym is the TO side of a cross-symbol CA (shares received via merger/demerger)
+    for ca in ca_list:
+        ca_type = ca.get("type", "").lower()
+        if ca_type not in _CROSS_TYPES:
+            continue
+        to_sym = str(ca.get("to_symbol", "")).strip().upper()
+        if to_sym != sym:
+            continue
+        try:
+            ca_d = datetime.strptime(ca.get("date", ""), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if abs((tx_d - ca_d).days) <= 60:
+            return _normalise(ca_type)
+
+    # 2. For zero-cost buys: check intra-symbol CAs (bonus, split, rights)
+    if price == 0:
+        for ca in ca_list:
+            ca_type = ca.get("type", "").lower()
+            if ca_type not in _INTRA_TYPES + _CROSS_TYPES:
+                continue
+            ca_sym = str(ca.get("symbol", ca.get("to_symbol", ""))).strip().upper()
+            if ca_sym != sym:
                 continue
             try:
                 ca_d = datetime.strptime(ca.get("date", ""), "%Y-%m-%d").date()
             except ValueError:
                 continue
             if abs((tx_d - ca_d).days) <= 30:
-                return ca_type
-        return "allotment"   # zero-cost but no matching CA
+                return _normalise(ca_type)
+        return "allotment"
+
     return "secondary"
 
 

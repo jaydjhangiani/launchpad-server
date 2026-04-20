@@ -214,8 +214,9 @@ def compute_cg_events(
                 lots.append(lot)
 
             elif tx_type == "sell":
-                sell_ch_ps = charges / shares   # sell-side charges per share
-                remaining  = shares
+                sell_ch_ps  = charges / shares if shares else 0  # sell-side charges per share
+                sell_reason = str(evt.get("acquisition_type", "market")).lower() or "market"
+                remaining   = shares
 
                 while remaining > 1e-8 and lots:
                     lot   = lots[0]
@@ -260,6 +261,7 @@ def compute_cg_events(
                         "jurisdiction":              jur,
                         "currency":                  curr,
                         "acquisition_type":          lot["acquisition_type"],
+                        "sell_reason":               sell_reason,
                         "buy_date":                  lot["date"],
                         "sell_date":                 ev_date,
                         "shares":                    round(taken, 6),
@@ -357,8 +359,8 @@ def compute_cg_events(
                 "jurisdiction":              jur,
                 "currency":                  curr,
                 "acquisition_type":          lot["acquisition_type"],
+                "sell_reason":               None,   # not yet sold
                 "buy_date":                  lot["date"],
-                "sell_date":                 today_str,
                 "shares":                    round(taken, 6),
                 "buy_cost_per_share":        round(lot["cost_per_share"], 4),
                 "effective_cost_per_share":  round(eff_cost, 4),
