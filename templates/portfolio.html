@@ -341,6 +341,16 @@
       font-family:inherit; border:1px solid; background:#0d0d0d; }
     .tx-type-btn.tx-buy  { color:#00e676; border-color:#1a4a2a; }
     .tx-type-btn.tx-sell { color:#ff5555; border-color:#4a1a1a; }
+    /* Acquisition-source badges */
+    .acq-badge { font-size:7px; padding:0 3px; border-radius:2px; margin-left:3px;
+      border:1px solid; vertical-align:middle; letter-spacing:.5px; }
+    .acq-sec     { color:#556677; border-color:#334455; }
+    .acq-ipo     { color:#33ccdd; border-color:#1a4a55; }
+    .acq-bonus   { color:#ddaa33; border-color:#554411; }
+    .acq-rights  { color:#aa66ee; border-color:#44226a; }
+    .acq-split   { color:#4499ee; border-color:#1a3a66; }
+    .acq-allotment { color:#33aa88; border-color:#1a4a3a; }
+    .acq-merger,.acq-amalgamation,.acq-demerger,.acq-spinoff { color:#ff9944; border-color:#553311; }
     .tx-save { color:#00773a; cursor:pointer; padding:0 3px; font-size:11px; }
     .tx-save:hover { color:#00e676; }
     .tx-cancel { color:#444; cursor:pointer; padding:0 3px; font-size:11px; }
@@ -917,12 +927,27 @@ function _portRender(data){
       const txHtml = (p.transactions||[]).map((tx,i)=>{
         const txCls  = tx.type==='buy'?'tx-buy':'tx-sell';
         const pnl    = tx.pnl!=null ? `<span class="${cc(tx.pnl)}">${sign(tx.pnl)}</span>` : '<span style="color:#333">--</span>';
-        const xirrTx = tx.xirr!=null
-          ? `<span class="${cc(tx.xirr)}" style="font-size:9px">${tx.xirr>=0?'+':''}${tx.xirr.toFixed(1)}%</span>`
-          : '<span style="color:#2a3a4a">—</span>';
+        // Acquisition source badge
+        const acqMap = {secondary:'SEC',ipo:'IPO',bonus:'BONUS',rights:'RIGHTS',
+          split:'SPLIT',allotment:'ALLOT',merger:'MERGER',amalgamation:'MERGER',
+          demerger:'DEMER',spinoff:'SPINOFF','spin-off':'SPINOFF',subdivision:'SPLIT'};
+        const acq     = tx.acquisition_type || 'secondary';
+        const acqLbl  = acqMap[acq] || acq.toUpperCase();
+        const acqCls  = 'acq-'+(acq.replace('-',''));
+        const acqBadge = tx.type==='buy'
+          ? `<span class="acq-badge ${acqCls}" title="Acquisition type: ${acq}">${acqLbl}</span>` : '';
+        // XIRR cell
+        let xirrTx;
+        if(tx.xirr_infinite){
+          xirrTx = `<span style="color:#ddaa33;font-size:11px" title="Zero-cost acquisition (∞ return on zero investment)">&#8734;</span>`;
+        } else if(tx.xirr!=null){
+          xirrTx = `<span class="${cc(tx.xirr)}" style="font-size:9px">${tx.xirr>=0?'+':''}${tx.xirr.toFixed(1)}%</span>`;
+        } else {
+          xirrTx = '<span style="color:#2a3a4a">—</span>';
+        }
         const rowId  = `ptxr-${escId(p.symbol)}-${i}`;
         return `<tr id="${rowId}">
-          <td class="${txCls}">${tx.type.toUpperCase()}</td>
+          <td class="${txCls}">${tx.type.toUpperCase()}${acqBadge}</td>
           <td>${tx.date||'--'}</td>
           <td>${tx.shares%1===0?tx.shares:Number(tx.shares).toFixed(4)}</td>
           <td>${fmtI(tx.price)}</td>
@@ -930,7 +955,7 @@ function _portRender(data){
           <td>${pnl}</td>
           <td title="XIRR for this lot">${xirrTx}</td>
           <td>
-            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price})" title="Edit">&#9998;</span>
+            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}')" title="Edit">&#9998;</span>
             <span class="tx-del"  onclick="removePortfolioTx('${escJs(p.symbol)}',${i})" title="Delete">&#10005;</span>
           </td>
         </tr>`;
@@ -1354,8 +1379,9 @@ async function importYahooCsv(input){
     input.value = '';
   }
 }
-function _portEditTx(event, sym, idx, type, date, shares, price){
+function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
   event.stopPropagation();
+  const acq = acqType || 'secondary';
   const row = document.getElementById(`ptxr-${escId(sym)}-${idx}`);
   if(!row) return;
   row.innerHTML = `
@@ -1365,7 +1391,18 @@ function _portEditTx(event, sym, idx, type, date, shares, price){
     <td><input class="tx-edit-inp" type="date" id="txe-date-${escId(sym)}-${idx}" value="${date}" /></td>
     <td><input class="tx-edit-inp" type="number" id="txe-sh-${escId(sym)}-${idx}" value="${shares}" step="any" min="0" /></td>
     <td><input class="tx-edit-inp" type="number" id="txe-pr-${escId(sym)}-${idx}" value="${price}" step="any" min="0" /></td>
-    <td></td><td></td>
+    <td colspan="2">
+      <select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px" title="How were these shares acquired?">
+        <option value="secondary"  ${acq==='secondary'?'selected':''}>Secondary market</option>
+        <option value="ipo"        ${acq==='ipo'?'selected':''}>IPO / NFO</option>
+        <option value="bonus"      ${acq==='bonus'?'selected':''}>Bonus issue</option>
+        <option value="rights"     ${acq==='rights'?'selected':''}>Rights issue</option>
+        <option value="split"      ${acq==='split'?'selected':''}>Stock split</option>
+        <option value="allotment"  ${acq==='allotment'?'selected':''}>Allotment / ESOP</option>
+        <option value="merger"     ${acq==='merger'?'selected':''}>Merger / Amalgamation</option>
+        <option value="demerger"   ${acq==='demerger'?'selected':''}>Demerger / Spinoff</option>
+      </select>
+    </td>
     <td>
       <span class="tx-save"   onclick="_portSaveEditTx('${escJs(sym)}',${idx})" title="Save">&#10003;</span>
       <span class="tx-cancel" onclick="pollPortfolio()" title="Cancel">&#10005;</span>
@@ -1382,10 +1419,12 @@ async function _portSaveEditTx(sym, idx){
   const date   = dateInp.value;
   const shares = parseFloat(shInp.value);
   const price  = parseFloat(prInp.value);
-  if(isNaN(shares)||shares<=0||isNaN(price)||price<=0) return;
+  const acqSel = document.getElementById(`txe-acq-${escId(sym)}-${idx}`);
+  const acq    = acqSel ? acqSel.value : 'secondary';
+  if(isNaN(shares)||shares<=0||isNaN(price)||price<0) return;
   const res = await fetch('/api/portfolio/edit_tx',{method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:sym, tx_index:idx, type, date, shares, price})});
+    body:JSON.stringify({symbol:sym, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
   if(res.ok) pollPortfolio();
 }
 

@@ -321,6 +321,43 @@ def _stock_xirr(txs: list, open_shares: float, ltp: float | None,
     return None if r is None else round(r * 100, 2)
 
 
+# ---------------------------------------------------------------------------
+# Acquisition-type inference
+# ---------------------------------------------------------------------------
+_ACQ_ZERO_COST = {"bonus", "split", "subdivision", "rights", "allotment",
+                  "merger", "amalgamation", "demerger", "spinoff", "spin-off"}
+
+def _infer_acquisition_type(tx: dict, sym: str, ca_list: list) -> str:
+    """Return acquisition_type string. Infers from price=0 + CA list if not set."""
+    stored = (tx.get("acquisition_type") or "").strip().lower()
+    if stored:
+        return stored
+    price = float(tx.get("price", 0) or 0)
+    date  = tx.get("date", "")
+    if price == 0:
+        # Look for a matching intra-symbol CA on or near this date (±30 days)
+        from datetime import timedelta
+        try:
+            tx_d = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            return "allotment"
+        for ca in ca_list:
+            if str(ca.get("symbol", "")).strip().upper() != sym:
+                continue
+            ca_type = ca.get("type", "").lower()
+            if ca_type not in ("bonus", "split", "subdivision", "rights",
+                               "merger", "amalgamation", "demerger", "spinoff", "spin-off"):
+                continue
+            try:
+                ca_d = datetime.strptime(ca.get("date", ""), "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if abs((tx_d - ca_d).days) <= 30:
+                return ca_type
+        return "allotment"   # zero-cost but no matching CA
+    return "secondary"
+
+
 def _resolve_cagr_inception(symbol: str, ca_list: list, all_entries: list):
     entries_by_sym = {str(e.get("symbol", "")).strip().upper(): e for e in all_entries}
     visited = set()
@@ -467,17 +504,21 @@ def api_portfolio():
         _sh = 0.0; _ac = 0.0
         today_str = datetime.now(timezone.utc).date().isoformat()
         for tx in sorted(txs, key=lambda t: t.get("date", "")):
-            ttype = tx.get("type", "buy").lower()
-            sh    = float(tx.get("shares", 0)); pr = float(tx.get("price", 0))
+            ttype   = tx.get("type", "buy").lower()
+            sh      = float(tx.get("shares", 0)); pr = float(tx.get("price", 0))
             charges = (float(tx.get("brokerage", 0)) +
                        float(tx.get("stt", 0)) +
                        float(tx.get("other_charges", 0)))
-            tx_pnl = None; tx_xirr = None
+            acq_type = _infer_acquisition_type(tx, sym, ca_list)
+            tx_pnl = None; tx_xirr = None; tx_xirr_inf = False
             if ttype == "buy":
                 total = _sh * _ac + sh * pr; _sh += sh
                 _ac   = total / _sh if _sh else 0.0
-                # Per-lot XIRR: bought at cost, current value = sh * ltp
-                if ltp is not None and pr > 0 and tx.get("date"):
+                if pr == 0:
+                    # Zero-cost lot (bonus/split/allotment): return is infinite
+                    if ltp is not None and ltp > 0:
+                        tx_xirr_inf = True
+                elif ltp is not None and tx.get("date"):
                     lot_flows = [(tx["date"], -(sh * pr + charges)),
                                  (today_str,   sh * ltp)]
                     r = _xirr(lot_flows)
@@ -498,7 +539,9 @@ def api_portfolio():
             tx_rows.append({"date": tx.get("date", ""), "type": ttype,
                             "shares": sh, "price": pr,
                             "value": round(sh * pr, 2), "pnl": tx_pnl,
-                            "xirr": tx_xirr})
+                            "acquisition_type": acq_type,
+                            "xirr": tx_xirr,
+                            "xirr_infinite": tx_xirr_inf})
 
         today_d   = datetime.now(timezone.utc).date()
         buy_dates = [t.get("date","") for t in txs if t.get("type","buy").lower()=="buy"  and t.get("date","")]
