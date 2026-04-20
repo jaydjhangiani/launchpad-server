@@ -358,6 +358,8 @@
     .acq-rebalance{ color:#4499ee; border-color:#1a3a66; }
     .acq-exit     { color:#ffaa33; border-color:#554411; }
     .acq-partial  { color:#aabb44; border-color:#445511; }
+    .acq-merger,.acq-amalgamation { color:#ff9944; border-color:#553311; }
+    .acq-demerger,.acq-spinoff    { color:#ee6688; border-color:#551133; }
     .tx-save { color:#00773a; cursor:pointer; padding:0 3px; font-size:11px; }
     .tx-save:hover { color:#00e676; }
     .tx-cancel { color:#444; cursor:pointer; padding:0 3px; font-size:11px; }
@@ -939,7 +941,8 @@ function _portRender(data){
           split:'SPLIT',allotment:'ALLOT',merger:'MERGER',amalgamation:'MERGER',
           demerger:'DEMER',spinoff:'SPINOFF','spin-off':'SPINOFF',subdivision:'SPLIT'};
         const sellMap = {market:'MKT',profit:'PROFIT',stoploss:'SL',
-          rebalance:'REBAL',exit:'EXIT',partial:'PART',rights:'RIGHTS'};
+          rebalance:'REBAL',exit:'EXIT',partial:'PART',rights:'RIGHTS',
+          merger:'MERGER',amalgamation:'AMAL',demerger:'DEMER',spinoff:'SPINOFF'};
         const isBuy   = tx.type==='buy';
         const acq     = tx.acquisition_type || (isBuy ? 'secondary' : 'market');
         const acqLbl  = isBuy ? (buyMap[acq]||acq.toUpperCase()) : (sellMap[acq]||acq.toUpperCase());
@@ -1406,13 +1409,17 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
     <option value="merger"     ${sel('merger')}>Merger / Amalgamation</option>
     <option value="demerger"   ${sel('demerger')}>Demerger / Spinoff</option>`;
   const sellOpts = `
-    <option value="market"    ${sel('market')}>Market sale</option>
-    <option value="profit"    ${sel('profit')}>Profit booking</option>
-    <option value="stoploss"  ${sel('stoploss')}>Stop loss</option>
-    <option value="rebalance" ${sel('rebalance')}>Rebalancing</option>
-    <option value="exit"      ${sel('exit')}>Full exit</option>
-    <option value="partial"   ${sel('partial')}>Partial exit</option>
-    <option value="rights"    ${sel('rights')}>Rights (sell entitlement)</option>`;
+    <option value="market"       ${sel('market')}>Market sale</option>
+    <option value="profit"       ${sel('profit')}>Profit booking</option>
+    <option value="stoploss"     ${sel('stoploss')}>Stop loss</option>
+    <option value="rebalance"    ${sel('rebalance')}>Rebalancing</option>
+    <option value="exit"         ${sel('exit')}>Full exit</option>
+    <option value="partial"      ${sel('partial')}>Partial exit</option>
+    <option value="rights"       ${sel('rights')}>Rights (sell entitlement)</option>
+    <option value="merger"       ${sel('merger')}>Merger / Amalgamation</option>
+    <option value="amalgamation" ${sel('amalgamation')}>Amalgamation</option>
+    <option value="demerger"     ${sel('demerger')}>Demerger</option>
+    <option value="spinoff"      ${sel('spinoff')}>Spinoff</option>`;
   row.innerHTML = `
     <td><button class="tx-type-btn ${type}" id="txe-type-${escId(sym)}-${idx}"
       onclick="this.dataset.t=(this.dataset.t||'${type}')==='buy'?'sell':'buy';this.textContent=this.dataset.t.toUpperCase();this.className='tx-type-btn '+this.dataset.t;"
