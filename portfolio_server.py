@@ -332,6 +332,9 @@ def _infer_acquisition_type(tx: dict, sym: str, ca_list: list) -> str:
     stored = (tx.get("acquisition_type") or "").strip().lower()
     if stored:
         return stored
+    ttype = tx.get("type", "buy").lower()
+    if ttype == "sell":
+        return "market"   # default sell reason
     price = float(tx.get("price", 0) or 0)
     date  = tx.get("date", "")
     if price == 0:

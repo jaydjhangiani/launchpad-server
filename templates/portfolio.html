@@ -351,6 +351,13 @@
     .acq-split   { color:#4499ee; border-color:#1a3a66; }
     .acq-allotment { color:#33aa88; border-color:#1a4a3a; }
     .acq-merger,.acq-amalgamation,.acq-demerger,.acq-spinoff { color:#ff9944; border-color:#553311; }
+    /* Sell-reason badges */
+    .acq-market   { color:#556677; border-color:#334455; }
+    .acq-profit   { color:#00cc66; border-color:#1a5533; }
+    .acq-stoploss { color:#ff5555; border-color:#551111; }
+    .acq-rebalance{ color:#4499ee; border-color:#1a3a66; }
+    .acq-exit     { color:#ffaa33; border-color:#554411; }
+    .acq-partial  { color:#aabb44; border-color:#445511; }
     .tx-save { color:#00773a; cursor:pointer; padding:0 3px; font-size:11px; }
     .tx-save:hover { color:#00e676; }
     .tx-cancel { color:#444; cursor:pointer; padding:0 3px; font-size:11px; }
@@ -927,15 +934,18 @@ function _portRender(data){
       const txHtml = (p.transactions||[]).map((tx,i)=>{
         const txCls  = tx.type==='buy'?'tx-buy':'tx-sell';
         const pnl    = tx.pnl!=null ? `<span class="${cc(tx.pnl)}">${sign(tx.pnl)}</span>` : '<span style="color:#333">--</span>';
-        // Acquisition source badge
-        const acqMap = {secondary:'SEC',ipo:'IPO',bonus:'BONUS',rights:'RIGHTS',
+        // Acquisition / sell-reason badge
+        const buyMap  = {secondary:'SEC',ipo:'IPO',bonus:'BONUS',rights:'RIGHTS',
           split:'SPLIT',allotment:'ALLOT',merger:'MERGER',amalgamation:'MERGER',
           demerger:'DEMER',spinoff:'SPINOFF','spin-off':'SPINOFF',subdivision:'SPLIT'};
-        const acq     = tx.acquisition_type || 'secondary';
-        const acqLbl  = acqMap[acq] || acq.toUpperCase();
-        const acqCls  = 'acq-'+(acq.replace('-',''));
-        const acqBadge = tx.type==='buy'
-          ? `<span class="acq-badge ${acqCls}" title="Acquisition type: ${acq}">${acqLbl}</span>` : '';
+        const sellMap = {market:'MKT',profit:'PROFIT',stoploss:'SL',
+          rebalance:'REBAL',exit:'EXIT',partial:'PART',rights:'RIGHTS'};
+        const isBuy   = tx.type==='buy';
+        const acq     = tx.acquisition_type || (isBuy ? 'secondary' : 'market');
+        const acqLbl  = isBuy ? (buyMap[acq]||acq.toUpperCase()) : (sellMap[acq]||acq.toUpperCase());
+        const acqCls  = 'acq-'+acq.replace(/[-_]/g,'');
+        const badgeTip= isBuy ? `Acquisition: ${acq}` : `Sell reason: ${acq}`;
+        const acqBadge= `<span class="acq-badge ${acqCls}" title="${badgeTip}">${acqLbl}</span>`;
         // XIRR cell
         let xirrTx;
         if(tx.xirr_infinite){
@@ -1381,9 +1391,28 @@ async function importYahooCsv(input){
 }
 function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
   event.stopPropagation();
-  const acq = acqType || 'secondary';
-  const row = document.getElementById(`ptxr-${escId(sym)}-${idx}`);
+  const isBuy = type === 'buy';
+  const acq   = acqType || (isBuy ? 'secondary' : 'market');
+  const row   = document.getElementById(`ptxr-${escId(sym)}-${idx}`);
   if(!row) return;
+  const sel = v => acq===v ? 'selected' : '';
+  const buyOpts = `
+    <option value="secondary"  ${sel('secondary')}>Secondary market</option>
+    <option value="ipo"        ${sel('ipo')}>IPO / NFO</option>
+    <option value="bonus"      ${sel('bonus')}>Bonus issue</option>
+    <option value="rights"     ${sel('rights')}>Rights issue</option>
+    <option value="split"      ${sel('split')}>Stock split</option>
+    <option value="allotment"  ${sel('allotment')}>Allotment / ESOP</option>
+    <option value="merger"     ${sel('merger')}>Merger / Amalgamation</option>
+    <option value="demerger"   ${sel('demerger')}>Demerger / Spinoff</option>`;
+  const sellOpts = `
+    <option value="market"    ${sel('market')}>Market sale</option>
+    <option value="profit"    ${sel('profit')}>Profit booking</option>
+    <option value="stoploss"  ${sel('stoploss')}>Stop loss</option>
+    <option value="rebalance" ${sel('rebalance')}>Rebalancing</option>
+    <option value="exit"      ${sel('exit')}>Full exit</option>
+    <option value="partial"   ${sel('partial')}>Partial exit</option>
+    <option value="rights"    ${sel('rights')}>Rights (sell entitlement)</option>`;
   row.innerHTML = `
     <td><button class="tx-type-btn ${type}" id="txe-type-${escId(sym)}-${idx}"
       onclick="this.dataset.t=(this.dataset.t||'${type}')==='buy'?'sell':'buy';this.textContent=this.dataset.t.toUpperCase();this.className='tx-type-btn '+this.dataset.t;"
@@ -1392,15 +1421,9 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
     <td><input class="tx-edit-inp" type="number" id="txe-sh-${escId(sym)}-${idx}" value="${shares}" step="any" min="0" /></td>
     <td><input class="tx-edit-inp" type="number" id="txe-pr-${escId(sym)}-${idx}" value="${price}" step="any" min="0" /></td>
     <td colspan="2">
-      <select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px" title="How were these shares acquired?">
-        <option value="secondary"  ${acq==='secondary'?'selected':''}>Secondary market</option>
-        <option value="ipo"        ${acq==='ipo'?'selected':''}>IPO / NFO</option>
-        <option value="bonus"      ${acq==='bonus'?'selected':''}>Bonus issue</option>
-        <option value="rights"     ${acq==='rights'?'selected':''}>Rights issue</option>
-        <option value="split"      ${acq==='split'?'selected':''}>Stock split</option>
-        <option value="allotment"  ${acq==='allotment'?'selected':''}>Allotment / ESOP</option>
-        <option value="merger"     ${acq==='merger'?'selected':''}>Merger / Amalgamation</option>
-        <option value="demerger"   ${acq==='demerger'?'selected':''}>Demerger / Spinoff</option>
+      <select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px"
+        title="${isBuy ? 'How were these shares acquired?' : 'Why were these shares sold?'}">
+        ${isBuy ? buyOpts : sellOpts}
       </select>
     </td>
     <td>
