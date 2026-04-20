@@ -360,6 +360,7 @@
     .acq-partial  { color:#aabb44; border-color:#445511; }
     .acq-merger,.acq-amalgamation { color:#ff9944; border-color:#553311; }
     .acq-demerger,.acq-spinoff    { color:#ee6688; border-color:#551133; }
+    .acq-unlisted { color:#cc88ff; border-color:#551177; }
     .tx-save { color:#00773a; cursor:pointer; padding:0 3px; font-size:11px; }
     .tx-save:hover { color:#00e676; }
     .tx-cancel { color:#444; cursor:pointer; padding:0 3px; font-size:11px; }
@@ -939,7 +940,7 @@ function _portRender(data){
         // Acquisition / sell-reason badge
         const buyMap  = {secondary:'SEC',ipo:'IPO',bonus:'BONUS',rights:'RIGHTS',
           split:'SPLIT',allotment:'ALLOT',merger:'MERGER',amalgamation:'MERGER',
-          demerger:'DEMER',spinoff:'SPINOFF','spin-off':'SPINOFF',subdivision:'SPLIT'};
+          demerger:'DEMER',spinoff:'SPINOFF','spin-off':'SPINOFF',subdivision:'SPLIT',unlisted:'UNLIST'};
         const sellMap = {market:'MKT',profit:'PROFIT',stoploss:'SL',
           rebalance:'REBAL',exit:'EXIT',partial:'PART',rights:'RIGHTS',
           merger:'MERGER',amalgamation:'AMAL',demerger:'DEMER',spinoff:'SPINOFF'};
@@ -1407,7 +1408,8 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
     <option value="split"      ${sel('split')}>Stock split</option>
     <option value="allotment"  ${sel('allotment')}>Allotment / ESOP</option>
     <option value="merger"     ${sel('merger')}>Merger / Amalgamation</option>
-    <option value="demerger"   ${sel('demerger')}>Demerger / Spinoff</option>`;
+    <option value="demerger"   ${sel('demerger')}>Demerger / Spinoff</option>
+    <option value="unlisted"   ${sel('unlisted')}>Unlisted / Private market</option>`;
   const sellOpts = `
     <option value="market"       ${sel('market')}>Market sale</option>
     <option value="profit"       ${sel('profit')}>Profit booking</option>
