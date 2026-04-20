@@ -393,6 +393,9 @@
       <span class="port-summ-sep">|</span>
       <span class="port-summ-lbl">REALISED</span>
       <span id="psum-real" class="num">—</span>
+      <span class="port-summ-sep">|</span>
+      <span class="port-summ-lbl" title="Portfolio XIRR — true money-weighted annualised return across all cash flows">XIRR</span>
+      <span id="psum-xirr" class="num">—</span>
     </div>
   </div>
 
@@ -414,7 +417,7 @@
         <th class="sortable" data-col="realized_pnl" onclick="_portSort('realized_pnl')">REAL P&amp;L &#8377;<span id="sort-ind-realized_pnl" class="sort-ind"></span></th>
         <th class="sortable" data-col="realized_pct" onclick="_portSort('realized_pct')">REAL%<span id="sort-ind-realized_pct" class="sort-ind"></span></th>
         <th class="sortable" data-col="alloc_pct"    onclick="_portSort('alloc_pct')">ALLOC%<span id="sort-ind-alloc_pct" class="sort-ind"></span></th>
-        <th class="sortable" data-col="cagr"         onclick="_portSort('cagr')">CAGR%<span id="sort-ind-cagr" class="sort-ind"></span></th>
+        <th class="sortable" data-col="cagr"         onclick="_portSort('cagr')" title="XIRR: money-weighted annualised return per stock (per-lot accurate)">XIRR%<span id="sort-ind-cagr" class="sort-ind"></span></th>
         <th></th>
       </tr>
     </thead>
@@ -902,7 +905,7 @@ function _portRender(data){
         <td class="port-real ${realCls}">${sign(p.realized_pnl)}</td>
         <td class="port-real ${realCls}">${fmtP(p.realized_pct)}</td>
         <td>${p.alloc_pct==null?'--':Number(p.alloc_pct).toFixed(1)+'%'}</td>
-        <td class="port-pnl ${cc(p.cagr)}" style="font-size:0.82em" title="${p.inception_date?'From predecessor '+p.inception_date:''}">
+        <td class="port-pnl ${cc(p.cagr)}" style="font-size:0.82em" title="XIRR (money-weighted return): ${p.cagr!=null?p.cagr+'%':'N/A'}${p.inception_date?' — from predecessor '+p.inception_date:''}">
           ${p.cagr==null?'--':fmtP(p.cagr)+(p.inception_date?'<span style="color:#5af;font-size:0.75em" title="CAGR measured from predecessor '+escHtml(p.inception_date)+'">*</span>':'')}
         </td>
         <td style="white-space:nowrap">
@@ -960,7 +963,7 @@ function _portRender(data){
       <td class="port-real ${rCls}">${sign(tot.realized_pnl)}</td>
       <td></td>
       <td></td>
-      <td class="port-pnl ${cc(tot.weighted_cagr)}" style="font-size:0.82em">${fmtP(tot.weighted_cagr)}</td>
+      <td class="port-pnl ${cc(tot.weighted_cagr)}" style="font-size:0.82em" title="Portfolio XIRR: ${tot.portfolio_xirr!=null?tot.portfolio_xirr+'%':'N/A'}">${tot.portfolio_xirr!=null?fmtP(tot.portfolio_xirr):fmtP(tot.weighted_cagr)}</td>
       <td></td>
     </tr>`;
   }
@@ -978,6 +981,13 @@ function _portRender(data){
   setNum('psum-mktval',  totals.mkt_value,   false);
   setNum('psum-cash',    totals.cash_balance, false);
   setNum('psum-port',    totals.portfolio_total, false);
+  // Portfolio XIRR in summary bar
+  const xirrEl = document.getElementById('psum-xirr');
+  if(xirrEl){
+    const xv = totals.portfolio_xirr;
+    xirrEl.textContent = xv==null ? '—' : (xv>=0?'+':'')+xv.toFixed(2)+'%';
+    xirrEl.className = 'num'+(xv==null?'':(xv>0?' up':xv<0?' down':' flat'));
+  }
   const ipEl = document.getElementById('psum-invest-pct');
   const cpEl = document.getElementById('psum-cash-pct');
   if(ipEl) ipEl.textContent = `INVESTED ${tot.invested_pct!=null?tot.invested_pct.toFixed(1):'—'}%`;

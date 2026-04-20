@@ -184,6 +184,143 @@ def _derive_position_with_ca(entry: dict, ca_list: list) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# XIRR  — pure-Python money-weighted return solver (no scipy needed)
+# ---------------------------------------------------------------------------
+def _xirr(cash_flows: list[tuple]) -> float | None:
+    """
+    Compute XIRR (annualised money-weighted return) from a list of
+    (date_str_or_date, amount) tuples.  Negative = cash out (buy),
+    positive = cash in (sell / terminal value).
+
+    Returns annualised rate as a plain float (e.g. 0.12 = 12 %).
+    Returns None if unsolvable (< 30 days span, all same sign, etc.).
+    """
+    if not cash_flows:
+        return None
+
+    pairs: list[tuple] = []
+    for d, a in cash_flows:
+        if isinstance(d, str):
+            try:
+                d = datetime.strptime(d, "%Y-%m-%d").date()
+            except ValueError:
+                return None
+        pairs.append((d, float(a)))
+
+    if not pairs:
+        return None
+
+    pairs.sort(key=lambda x: x[0])
+    t0    = pairs[0][0]
+    years = [(d - t0).days / 365.25 for d, _ in pairs]
+    flows = [a for _, a in pairs]
+
+    span  = (pairs[-1][0] - pairs[0][0]).days
+    if span < 30:
+        return None
+    if all(f <= 0 for f in flows) or all(f >= 0 for f in flows):
+        return None
+
+    def npv(r: float) -> float:
+        if r <= -1:
+            return float("inf")
+        return sum(f / (1 + r) ** t for f, t in zip(flows, years))
+
+    def dnpv(r: float) -> float:
+        return sum(-t * f / (1 + r) ** (t + 1) for f, t in zip(flows, years))
+
+    # Newton-Raphson with fallback bisection
+    r = 0.1
+    for _ in range(100):
+        fn  = npv(r)
+        dfn = dnpv(r)
+        if abs(dfn) < 1e-12:
+            break
+        r_new = r - fn / dfn
+        if abs(r_new - r) < 1e-8:
+            r = r_new
+            break
+        r = r_new
+        if r <= -1:
+            r = -0.999
+    else:
+        # Bisection fallback
+        lo, hi = -0.999, 100.0
+        for _ in range(200):
+            mid = (lo + hi) / 2
+            if hi - lo < 1e-8:
+                r = mid; break
+            if npv(lo) * npv(mid) < 0:
+                hi = mid
+            else:
+                lo = mid
+        r = mid
+
+    if not (-0.9999 < r < 100):
+        return None
+    return r
+
+
+def _stock_xirr(txs: list, open_shares: float, ltp: float | None,
+                ca_list: list, sym: str, all_entries: list) -> float | None:
+    """
+    Build cash flows for one stock and compute XIRR.
+    Buys  → negative cash flow (money out).
+    Sells → positive cash flow (money back in).
+    Open lot terminal value today → positive cash flow.
+    Also walks predecessor symbols via CA chain.
+    """
+    flows: list[tuple] = []
+
+    # Walk predecessor chain (mergers / name changes)
+    entries_by_sym = {str(e.get("symbol", "")).strip().upper(): e for e in all_entries}
+    chain_syms = [sym]
+    visited    = set()
+    cur        = sym
+    while cur and cur not in visited:
+        visited.add(cur)
+        pred_ca = next(
+            (ca for ca in ca_list
+             if ca.get("type", "").lower() in
+                ("merger", "amalgamation", "name_change", "demerger", "spinoff", "spin-off")
+             and ca.get("to_symbol", "").strip().upper() == cur),
+            None,
+        )
+        if not pred_ca:
+            break
+        cur = pred_ca.get("from_symbol", "").strip().upper()
+        if cur and cur not in chain_syms:
+            chain_syms.append(cur)
+
+    for cs in chain_syms:
+        e = entries_by_sym.get(cs)
+        if not e:
+            continue
+        for tx in e.get("transactions", []):
+            ttype = tx.get("type", "buy").lower()
+            sh    = float(tx.get("shares", 0))
+            pr    = float(tx.get("price",  0))
+            dt    = tx.get("date", "")
+            charges = (float(tx.get("brokerage", 0)) +
+                       float(tx.get("stt", 0)) +
+                       float(tx.get("other_charges", 0)))
+            if sh <= 0 or not dt:
+                continue
+            if ttype == "buy":
+                flows.append((dt, -(sh * pr + charges)))   # money out
+            elif ttype == "sell":
+                flows.append((dt,  sh * pr - charges))     # money in
+
+    # Terminal value for open lots
+    if open_shares > 0 and ltp is not None:
+        today = datetime.now(timezone.utc).date().isoformat()
+        flows.append((today, open_shares * ltp))
+
+    r = _xirr(flows)
+    return None if r is None else round(r * 100, 2)
+
+
 def _resolve_cagr_inception(symbol: str, ca_list: list, all_entries: list):
     entries_by_sym = {str(e.get("symbol", "")).strip().upper(): e for e in all_entries}
     visited = set()
@@ -349,25 +486,9 @@ def api_portfolio():
         last_sell = max(sel_dates) if sel_dates else None
         ca_inception   = _resolve_cagr_inception(sym, ca_list, entries)
         inception_date = ca_inception
-        cagr_start     = ca_inception or first_buy
-        cagr = None
-        try:
-            if cagr_start:
-                fbd  = datetime.strptime(cagr_start, "%Y-%m-%d").date()
-                if open_shares > 0 and ltp is not None and avg_cost > 0:
-                    days = (today_d - fbd).days
-                    if days >= 30:
-                        cagr = round(((ltp / avg_cost) ** (365.25 / days) - 1) * 100, 2)
-                elif open_shares == 0 and sold_cost_basis > 0 and last_sell:
-                    lsd  = datetime.strptime(last_sell, "%Y-%m-%d").date()
-                    days = (lsd - fbd).days
-                    if days >= 30:
-                        total_ret = (sold_cost_basis + realized_pnl) / sold_cost_basis
-                        cagr = -100.0 if total_ret <= 0 else round((total_ret ** (365.25 / days) - 1) * 100, 2)
-        except Exception:
-            cagr = None
-        if cagr is not None and abs(cagr) > 9999:
-            cagr = None
+
+        # XIRR-based CAGR (money-weighted, per-lot accurate)
+        cagr = _stock_xirr(txs, open_shares, ltp, ca_list, sym, entries)
 
         enriched.append({
             "symbol": sym, "name": name,
@@ -404,6 +525,31 @@ def api_portfolio():
     _tot_open_mv  = sum(mv for _, mv in _open_cagr)
     weighted_cagr = round(sum(c * mv for c, mv in _open_cagr) / _tot_open_mv, 2) if _tot_open_mv else None
 
+    # Portfolio XIRR — single true money-weighted return across all positions
+    all_port_flows: list[tuple] = []
+    for entry in entries:
+        sym_  = str(entry.get("symbol", "")).strip().upper()
+        for tx in entry.get("transactions", []):
+            ttype = tx.get("type", "buy").lower()
+            sh    = float(tx.get("shares", 0))
+            pr    = float(tx.get("price",  0))
+            dt    = tx.get("date", "")
+            charges = (float(tx.get("brokerage", 0)) +
+                       float(tx.get("stt", 0)) +
+                       float(tx.get("other_charges", 0)))
+            if sh <= 0 or not dt:
+                continue
+            if ttype == "buy":
+                all_port_flows.append((dt, -(sh * pr + charges)))
+            elif ttype == "sell":
+                all_port_flows.append((dt,  sh * pr - charges))
+    # Terminal value = total current market value of all open positions
+    if total_mktval > 0:
+        today_str = datetime.now(timezone.utc).date().isoformat()
+        all_port_flows.append((today_str, total_mktval))
+    port_xirr_raw = _xirr(all_port_flows)
+    portfolio_xirr = round(port_xirr_raw * 100, 2) if port_xirr_raw is not None else None
+
     return jsonify({
         "positions": enriched,
         "totals": {
@@ -418,6 +564,7 @@ def api_portfolio():
             "cash_pct":        cash_pct,
             "invested_pct":    invested_pct,
             "weighted_cagr":   weighted_cagr,
+            "portfolio_xirr":  portfolio_xirr,
         }
     })
 
