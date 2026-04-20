@@ -465,19 +465,40 @@ def api_portfolio():
 
         tx_rows = []
         _sh = 0.0; _ac = 0.0
+        today_str = datetime.now(timezone.utc).date().isoformat()
         for tx in sorted(txs, key=lambda t: t.get("date", "")):
             ttype = tx.get("type", "buy").lower()
             sh    = float(tx.get("shares", 0)); pr = float(tx.get("price", 0))
-            tx_pnl = None
+            charges = (float(tx.get("brokerage", 0)) +
+                       float(tx.get("stt", 0)) +
+                       float(tx.get("other_charges", 0)))
+            tx_pnl = None; tx_xirr = None
             if ttype == "buy":
                 total = _sh * _ac + sh * pr; _sh += sh
                 _ac   = total / _sh if _sh else 0.0
+                # Per-lot XIRR: bought at cost, current value = sh * ltp
+                if ltp is not None and pr > 0 and tx.get("date"):
+                    lot_flows = [(tx["date"], -(sh * pr + charges)),
+                                 (today_str,   sh * ltp)]
+                    r = _xirr(lot_flows)
+                    tx_xirr = round(r * 100, 2) if r is not None else None
             elif ttype == "sell":
                 tx_pnl = round((pr - _ac) * sh, 2)
                 _sh    = max(0.0, _sh - sh)
+                # Per-sell XIRR: from earliest buy-date through sell date
+                if _ac > 0 and tx.get("date"):
+                    prior_buys = [t.get("date","") for t in txs
+                                  if t.get("type","buy").lower()=="buy"
+                                  and t.get("date","") <= tx.get("date","")]
+                    if prior_buys:
+                        sell_flows = [(min(prior_buys), -(_ac * sh)),
+                                      (tx["date"],       sh * pr - charges)]
+                        r = _xirr(sell_flows)
+                        tx_xirr = round(r * 100, 2) if r is not None else None
             tx_rows.append({"date": tx.get("date", ""), "type": ttype,
                             "shares": sh, "price": pr,
-                            "value": round(sh * pr, 2), "pnl": tx_pnl})
+                            "value": round(sh * pr, 2), "pnl": tx_pnl,
+                            "xirr": tx_xirr})
 
         today_d   = datetime.now(timezone.utc).date()
         buy_dates = [t.get("date","") for t in txs if t.get("type","buy").lower()=="buy"  and t.get("date","")]

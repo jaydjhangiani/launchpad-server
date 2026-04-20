@@ -915,9 +915,12 @@ function _portRender(data){
         </td>
       </tr>`;
       const txHtml = (p.transactions||[]).map((tx,i)=>{
-        const txCls = tx.type==='buy'?'tx-buy':'tx-sell';
-        const pnl   = tx.pnl!=null ? `<span class="${cc(tx.pnl)}">${sign(tx.pnl)}</span>` : '<span style="color:#333">--</span>';
-        const rowId = `ptxr-${escId(p.symbol)}-${i}`;
+        const txCls  = tx.type==='buy'?'tx-buy':'tx-sell';
+        const pnl    = tx.pnl!=null ? `<span class="${cc(tx.pnl)}">${sign(tx.pnl)}</span>` : '<span style="color:#333">--</span>';
+        const xirrTx = tx.xirr!=null
+          ? `<span class="${cc(tx.xirr)}" style="font-size:9px">${tx.xirr>=0?'+':''}${tx.xirr.toFixed(1)}%</span>`
+          : '<span style="color:#2a3a4a">—</span>';
+        const rowId  = `ptxr-${escId(p.symbol)}-${i}`;
         return `<tr id="${rowId}">
           <td class="${txCls}">${tx.type.toUpperCase()}</td>
           <td>${tx.date||'--'}</td>
@@ -925,6 +928,7 @@ function _portRender(data){
           <td>${fmtI(tx.price)}</td>
           <td>${fmtI(tx.value)}</td>
           <td>${pnl}</td>
+          <td title="XIRR for this lot">${xirrTx}</td>
           <td>
             <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price})" title="Edit">&#9998;</span>
             <span class="tx-del"  onclick="removePortfolioTx('${escJs(p.symbol)}',${i})" title="Delete">&#10005;</span>
@@ -937,7 +941,7 @@ function _portRender(data){
             <table>
               <thead><tr>
                 <th>TYPE</th><th>DATE</th><th>SHARES</th><th>PRICE &#8377;</th>
-                <th>VALUE &#8377;</th><th>REAL P&amp;L &#8377;</th><th></th>
+                <th>VALUE &#8377;</th><th>REAL P&amp;L &#8377;</th><th>XIRR%</th><th></th>
               </tr></thead>
               <tbody>${txHtml}</tbody>
             </table>
