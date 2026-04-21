@@ -19,10 +19,11 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-PORTFOLIO_FILE = os.path.join(BASE_DIR, "portfolio.json")
-CASH_FILE      = os.path.join(BASE_DIR, "cash.json")
-CA_FILE        = os.path.join(BASE_DIR, "corporate_actions.json")
-PRICE_CACHE_FILE = os.path.join(BASE_DIR, "price_cache.json")
+PORTFOLIO_FILE    = os.path.join(BASE_DIR, "portfolio.json")
+CASH_FILE         = os.path.join(BASE_DIR, "cash.json")
+CA_FILE           = os.path.join(BASE_DIR, "corporate_actions.json")
+PRICE_CACHE_FILE  = os.path.join(BASE_DIR, "price_cache.json")
+CG_OVERRIDES_FILE = os.path.join(BASE_DIR, "cg_overrides.json")
 
 # ---------------------------------------------------------------------------
 # PRICE CACHE  — read from disk (shared with launchpad) + own background fetch
@@ -126,6 +127,19 @@ def _load_ca() -> list:
 def _save_ca(actions: list) -> None:
     with open(CA_FILE, "w", encoding="utf-8") as fh:
         json.dump(actions, fh, indent=2, ensure_ascii=False)
+
+
+def _load_cg_overrides() -> list:
+    try:
+        with open(CG_OVERRIDES_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return []
+
+
+def _save_cg_overrides(overrides: list) -> None:
+    with open(CG_OVERRIDES_FILE, "w", encoding="utf-8") as fh:
+        json.dump(overrides, fh, indent=2, ensure_ascii=False)
 
 
 def _derive_position_with_ca(entry: dict, ca_list: list) -> dict:
@@ -793,6 +807,29 @@ def api_portfolio_edit_tx():
     return jsonify({"status": "ok"})
 
 
+@app.route("/api/portfolio/edit_entry", methods=["POST"])
+def api_portfolio_edit_entry():
+    body       = request.get_json(force=True, silent=True) or {}
+    symbol     = (body.get("symbol")     or "").strip().upper()
+    new_symbol = (body.get("new_symbol") or symbol).strip().upper() or symbol
+    isin       = (body.get("isin")       or "").strip().upper() or None
+    name       = (body.get("name")       or "").strip()
+    exchange   = (body.get("exchange")   or "nse").strip().lower()
+    if not symbol: return jsonify({"error": "symbol required"}), 400
+    entries = [_migrate_entry(e) for e in _load_portfolio()]
+    entry   = next((e for e in entries if e["symbol"] == symbol), None)
+    if not entry: return jsonify({"error": "Symbol not found"}), 404
+    if new_symbol != symbol:
+        if any(e["symbol"] == new_symbol for e in entries):
+            return jsonify({"error": f"{new_symbol} already exists"}), 409
+        entry["symbol"] = new_symbol
+    if isin:     entry["isin"]     = isin
+    if name:     entry["name"]     = name
+    if exchange: entry["exchange"] = exchange
+    _save_portfolio(entries)
+    return jsonify({"status": "ok"})
+
+
 @app.route("/api/portfolio/remove", methods=["POST"])
 def api_portfolio_remove():
     body   = request.get_json(force=True, silent=True) or {}
@@ -997,6 +1034,8 @@ def api_ca_add():
         except: return jsonify({"error": "ratio must be a number"}), 400
         if ratio <= 0: return jsonify({"error": "ratio must be > 0"}), 400
         rec["symbol"] = sym; rec["ratio"] = ratio
+        isin = (body.get("isin") or "").strip().upper() or None
+        if isin: rec["isin"] = isin
     else:
         from_sym = (body.get("from_symbol") or "").strip().upper()
         to_sym   = (body.get("to_symbol")   or "").strip().upper()
@@ -1005,6 +1044,10 @@ def api_ca_add():
         if "ratio" in body:
             try:   rec["ratio"] = float(body["ratio"])
             except: pass
+        from_isin = (body.get("from_isin") or "").strip().upper() or None
+        to_isin   = (body.get("to_isin")   or "").strip().upper() or None
+        if from_isin: rec["from_isin"] = from_isin
+        if to_isin:   rec["to_isin"]   = to_isin
         if "cost_allocation_pct" in body:
             try:   rec["cost_allocation_pct"] = round(max(0.0, min(100.0, float(body["cost_allocation_pct"]))), 4)
             except: pass
@@ -1046,6 +1089,10 @@ def api_ca_edit():
         to_sym   = (body.get("to_symbol")   or "").strip().upper()
         if not from_sym or not to_sym: return jsonify({"error": "from_symbol and to_symbol required"}), 400
         rec["from_symbol"] = from_sym; rec["to_symbol"] = to_sym
+        from_isin = (body.get("from_isin") or "").strip().upper() or None
+        to_isin   = (body.get("to_isin")   or "").strip().upper() or None
+        if from_isin: rec["from_isin"] = from_isin
+        if to_isin:   rec["to_isin"]   = to_isin
         if "ratio" in body:
             try:   rec["ratio"] = float(body["ratio"])
             except: pass
@@ -1056,6 +1103,8 @@ def api_ca_edit():
         except: return jsonify({"error": "ratio must be a number"}), 400
         if ratio <= 0: return jsonify({"error": "ratio must be > 0"}), 400
         rec["symbol"] = sym; rec["ratio"] = ratio
+        isin = (body.get("isin") or "").strip().upper() or None
+        if isin: rec["isin"] = isin
     actions[idx] = rec
     _save_ca(actions)
     return jsonify({"status": "ok", "action": rec})
@@ -1069,9 +1118,84 @@ def api_capital_gains():
     entries = [_migrate_entry(e) for e in _load_portfolio()]
     ca_list = _load_ca()
     with _cache_lock:
-        prices = dict(_price_cache)   # snapshot — keys are symbol strings
+        prices = dict(_price_cache)
     result  = compute_all_cg(entries, ca_list, prices)
+    # Attach ISIN to each event from portfolio entries
+    isin_map = {e["symbol"]: e.get("isin") for e in entries}
+    for ev in result.get("events", []):
+        ev["isin"] = isin_map.get(ev["symbol"])
+    # Apply overrides
+    overrides = _load_cg_overrides()
+    for ev in result.get("events", []):
+        for ov in overrides:
+            if ov.get("symbol") == ev.get("symbol") and ov.get("buy_date") == ev.get("buy_date"):
+                sell_match = (ov.get("sell_date") or None) == (ev.get("sell_date") or None)
+                if not sell_match:
+                    continue
+                ev["override"] = ov
+                if ov.get("cost_per_share") is not None:
+                    ev["effective_cost_per_share"] = ov["cost_per_share"]
+                if ov.get("sell_price_per_share") is not None:
+                    ev["sell_price_per_share"] = ov["sell_price_per_share"]
+                if ov.get("holding_type") in ("stcg", "ltcg"):
+                    ev["holding_period"] = "long" if ov["holding_type"] == "ltcg" else "short"
+                if ov.get("isin"):
+                    ev["isin"] = ov["isin"]
+                break
     return jsonify(result)
+
+
+@app.route("/api/capital_gains/override", methods=["POST"])
+def api_cg_override():
+    body     = request.get_json(force=True, silent=True) or {}
+    symbol   = (body.get("symbol") or "").strip().upper()
+    buy_date = (body.get("buy_date") or "").strip()
+    if not symbol or not buy_date:
+        return jsonify({"error": "symbol and buy_date required"}), 400
+    sell_date = (body.get("sell_date") or None)
+    if sell_date: sell_date = str(sell_date).strip() or None
+    overrides = _load_cg_overrides()
+    rec = next((o for o in overrides
+                if o.get("symbol") == symbol and o.get("buy_date") == buy_date
+                and (o.get("sell_date") or None) == sell_date), None)
+    if rec is None:
+        rec = {"symbol": symbol, "buy_date": buy_date, "sell_date": sell_date}
+        overrides.append(rec)
+    cost = body.get("cost_per_share")
+    sell = body.get("sell_price_per_share")
+    ht   = (body.get("holding_type") or "").strip().lower() or None
+    isin = (body.get("isin") or "").strip().upper() or None
+    note = (body.get("note") or "").strip()
+    if cost is not None:
+        try:    rec["cost_per_share"] = float(cost)
+        except: pass
+    if sell is not None:
+        try:    rec["sell_price_per_share"] = float(sell)
+        except: pass
+    if ht in ("stcg", "ltcg"): rec["holding_type"] = ht
+    elif ht == "": rec.pop("holding_type", None)
+    if isin: rec["isin"] = isin
+    rec["note"] = note
+    _save_cg_overrides(overrides)
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/capital_gains/override/remove", methods=["POST"])
+def api_cg_override_remove():
+    body     = request.get_json(force=True, silent=True) or {}
+    symbol   = (body.get("symbol") or "").strip().upper()
+    buy_date = (body.get("buy_date") or "").strip()
+    sell_date = (body.get("sell_date") or None)
+    if sell_date: sell_date = str(sell_date).strip() or None
+    overrides = _load_cg_overrides()
+    new_list  = [o for o in overrides
+                 if not (o.get("symbol") == symbol and o.get("buy_date") == buy_date
+                         and (o.get("sell_date") or None) == sell_date)]
+    if len(new_list) == len(overrides):
+        return jsonify({"error": "Override not found"}), 404
+    _save_cg_overrides(new_list)
+    return jsonify({"status": "ok"})
+
 
 
 @app.route("/api/capital_gains/tax_rates")

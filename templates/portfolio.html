@@ -284,6 +284,7 @@
     #port-table tbody tr.port-tx-section.open { display:table-row; }
     #port-table td { padding:2px 5px; text-align:right; color:#ccc; white-space:nowrap; }
     #port-table td:first-child { text-align:left; color:var(--sym); font-weight:bold; }
+    #port-table td:nth-child(2) { text-align:left; font-size:8px; color:#446688; font-family:monospace; white-space:nowrap; letter-spacing:.04em; }
     #port-table td:last-child  { text-align:center; }
     #port-table tfoot td { border-top:1px solid #333; padding:4px 6px; text-align:right;
       color:#888; font-size:9px; font-weight:bold; white-space:nowrap; }
@@ -424,6 +425,7 @@
     <thead>
       <tr>
         <th class="sortable" data-col="symbol" onclick="_portSort('symbol')"><span id="port-sym-hdr" onclick="_portToggleSymName();event.stopPropagation()" class="port-sym-toggle" title="Toggle symbol/name">SYM</span><span id="sort-ind-symbol" class="sort-ind"></span></th>
+        <th style="text-align:left">ISIN</th>
         <th class="sortable" id="th-status" onclick="_portCycleStatus()" title="Click to filter: ALL → OPEN → CLOSED">STATUS<span id="status-filter-ind"> [ALL]</span></th>
         <th class="sortable" data-col="open_shares"  onclick="_portSort('open_shares')">SHARES<span id="sort-ind-open_shares" class="sort-ind"></span></th>
         <th class="sortable" data-col="avg_cost"     onclick="_portSort('avg_cost')">AVG COST &#8377;<span id="sort-ind-avg_cost" class="sort-ind"></span></th>
@@ -442,7 +444,7 @@
       </tr>
     </thead>
     <tbody id="port-tbody">
-      <tr class="port-empty-row"><td colspan="16">LOADING&hellip;</td></tr>
+      <tr class="port-empty-row"><td colspan="17">LOADING&hellip;</td></tr>
     </tbody>
     <tfoot id="port-tfoot"></tfoot>
   </table>
@@ -553,7 +555,7 @@
       <table id="ca-table">
         <thead>
           <tr>
-            <th>TYPE</th><th>FROM / SYM</th><th>TO</th><th>DATE</th><th>RATIO</th><th>NOTE</th><th></th>
+            <th>TYPE</th><th>FROM / SYM</th><th>FROM ISIN</th><th>TO SYM</th><th>TO ISIN</th><th>DATE</th><th>RATIO</th><th>NOTE</th><th></th>
           </tr>
         </thead>
         <tbody id="ca-tbody"></tbody>
@@ -572,9 +574,11 @@
         <input id="ca-date-inp" type="date" style="width:90px"/>
         <span id="ca-sym-span"><input id="ca-sym-inp" type="text" placeholder="SYMBOL" style="width:70px"/></span>
         <span id="ca-cross-span" style="display:none">
-          <input id="ca-from-inp" type="text" placeholder="FROM_SYM" style="width:70px"/>
+          <input id="ca-from-inp"      type="text" placeholder="FROM_SYM"  style="width:70px"/>
+          <input id="ca-from-isin-inp" type="text" placeholder="FROM_ISIN" style="width:90px;font-size:8px;font-family:monospace"/>
           <span style="color:#446688;font-size:9px">&#8594;</span>
-          <input id="ca-to-inp"   type="text" placeholder="TO_SYM"   style="width:70px"/>
+          <input id="ca-to-inp"        type="text" placeholder="TO_SYM"    style="width:70px"/>
+          <input id="ca-to-isin-inp"   type="text" placeholder="TO_ISIN"   style="width:90px;font-size:8px;font-family:monospace"/>
         </span>
         <input id="ca-ratio-inp" type="number" placeholder="ratio" step="any" min="0" style="width:55px"/>
         <input id="ca-note-inp"  type="text"   placeholder="note"               style="width:110px"/>
@@ -651,11 +655,11 @@
       <!-- Events table -->
       <table id="cg-table">
         <thead><tr>
-          <th>SYM</th><th>JUR</th><th>BUY DATE</th><th>SELL DATE</th>
+          <th>SYM</th><th>ISIN</th><th>JUR</th><th>BUY DATE</th><th>SELL DATE</th>
           <th>SHARES</th><th>COST/SH</th><th>GF FMV (31-Jan-18)</th><th>SELL/SH</th>
           <th>DAYS</th><th>TYPE</th>
           <th>GROSS GAIN</th><th>TAX%</th><th>EST. TAX</th><th>AFTER-TAX</th>
-          <th>FY</th>
+          <th>FY</th><th></th>
         </tr></thead>
         <tbody id="cg-tbody"></tbody>
       </table>
@@ -669,6 +673,7 @@
 <script>
 // ── UTILITIES ────────────────────────────────────────────────
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 function escId(s)  { return String(s).replace(/[^A-Za-z0-9_-]/g,'_'); }
 
@@ -909,10 +914,10 @@ function _portRender(data){
           ? `<span class="port-status status-closed">Closed</span>`
           : `<span class="port-status status-open">Open</span>`;
       const symLabel = _portShowName ? escHtml(p.name||p.symbol) : escHtml(p.symbol);
-      const isinLine = p.isin ? `<br><span style="font-size:0.72em;color:#446;letter-spacing:0.04em;font-weight:normal">${escHtml(p.isin)}</span>` : '';
       const qb = (!isClosed && !isNoData) ? `<button class="port-qbuy"  onclick="event.stopPropagation();_portQuickTx('${escJs(p.symbol)}','${p.exchange||'nse'}','buy')"  title="Quick BUY">B</button><button class="port-qsell" onclick="event.stopPropagation();_portQuickTx('${escJs(p.symbol)}','${p.exchange||'nse'}','sell')" title="Quick SELL">S</button>` : '';
       html += `<tr class="${rowCls}" onclick="_portToggleTx('${escJs(p.symbol)}')">
-        <td><b>${symLabel}</b>${isinLine}</td>
+        <td><b>${symLabel}</b></td>
+        <td>${escHtml(p.isin||'')}</td>
         <td>${statusBadge}</td>
         <td>${(isClosed||isNoData)?'<span style="color:#333">--</span>':sharesDisp}</td>
         <td>${(isClosed||isNoData)?'<span style="color:#333">--</span>':fmtI(p.avg_cost)}</td>
@@ -933,6 +938,7 @@ function _portRender(data){
           ${qb}
           <span class="port-expand${isOpen?' open':''}" id="port-exp-${escId(p.symbol)}" title="${txCount} tx">&#9660;</span>
           <span class="port-rm" onclick="event.stopPropagation();removePortfolioPosition('${escJs(p.symbol)}')" title="Remove all">&#10005;</span>
+          <span class="tx-edit" onclick="event.stopPropagation();_portEditEntry('${escJs(p.symbol)}','${escJs(p.isin||'')}','${escJs(p.name||p.symbol)}','${p.exchange||'nse'}')" title="Edit symbol/ISIN/name">&#9998;</span>
         </td>
       </tr>`;
       const txHtml = (p.transactions||[]).map((tx,i)=>{
@@ -970,13 +976,13 @@ function _portRender(data){
           <td>${pnl}</td>
           <td title="XIRR for this lot">${xirrTx}</td>
           <td>
-            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}','${escJs(p.isin||'')}')" title="Edit">&#9998;</span>
+            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}')" title="Edit">&#9998;</span>
             <span class="tx-del"  onclick="removePortfolioTx('${escJs(p.symbol)}',${i})" title="Delete">&#10005;</span>
           </td>
         </tr>`;
       }).join('');
       html += `<tr class="port-tx-section${isOpen?' open':''}" data-sym="${escHtml(p.symbol)}" id="port-tx-${escId(p.symbol)}">
-        <td class="port-tx-cell" colspan="16">
+        <td class="port-tx-cell" colspan="17">
           <div class="port-tx-inner">
             <table>
               <thead><tr>
@@ -996,7 +1002,7 @@ function _portRender(data){
     const totDayGain = visible.reduce((s,p)=>s+(p.day_gain_abs||0),0);
     const dayCls2    = cc(totDayGain);
     tfoot.innerHTML = `<tr>
-      <td colspan="2">TOTAL &mdash; ${visible.length}/${positions.length} POSITION${positions.length!==1?'S':''}</td>
+      <td colspan="3">TOTAL &mdash; ${visible.length}/${positions.length} POSITION${positions.length!==1?'S':''}</td>
       <td></td><td></td><td></td>
       <td class="port-chg ${dayCls2}">${sign(totDayGain)}</td>
       <td></td>
@@ -1175,10 +1181,14 @@ async function pollCorporateActions(){
       const fromCol = isCross ? escHtml(ca.from_symbol||'') : escHtml(ca.symbol||'');
       const toCol   = isCross ? escHtml(ca.to_symbol||'') : '';
       const ratio   = ca.ratio!=null ? Number(ca.ratio).toFixed(ca.ratio%1===0?0:4) : '';
+      const fromIsin = isCross ? escHtml(ca.from_isin||'') : escHtml(ca.isin||'');
+      const toIsin   = isCross ? escHtml(ca.to_isin||'') : '';
       return `<tr id="ca-row-${i}">
         <td style="color:#336699;font-size:8px;letter-spacing:1px">${lbl}</td>
         <td class="ca-sym">${fromCol}</td>
+        <td style="font-size:8px;color:#335566;font-family:monospace;white-space:nowrap">${fromIsin}</td>
         <td class="ca-sym">${toCol}</td>
+        <td style="font-size:8px;color:#335566;font-family:monospace;white-space:nowrap">${toIsin}</td>
         <td class="ca-date">${ca.date||'--'}</td>
         <td style="color:#335566">${ratio}</td>
         <td class="ca-note" title="${escHtml(ca.note||'')}">${escHtml(ca.note||'')}</td>
@@ -1201,19 +1211,23 @@ function _caEdit(idx){
     'spinoff':'spinoff','spin-off':'spinoff',split:'split',subdiv:'subdivision',bonus:'bonus'};
   const typeVal = Object.entries(CA_TYPE_LABELS).find(([k,v])=>v===cells[0]?.textContent.trim())?.[0] || 'merger';
   const isCross = CA_CROSS.has(typeVal);
-  const from = cells[1]?.textContent.trim()||'';
-  const to   = cells[2]?.textContent.trim()||'';
-  const date = cells[3]?.textContent.trim()||'';
-  const ratio= cells[4]?.textContent.trim()||'';
-  const note = cells[5]?.textContent.trim()||'';
+  const from     = cells[1]?.textContent.trim()||'';
+  const fromIsin = cells[2]?.textContent.trim()||'';
+  const to       = cells[3]?.textContent.trim()||'';
+  const toIsin   = cells[4]?.textContent.trim()||'';
+  const date     = cells[5]?.textContent.trim()||'';
+  const ratio    = cells[6]?.textContent.trim()||'';
+  const note     = cells[7]?.textContent.trim()||'';
   const typeOpts = Object.entries(CA_TYPE_LABELS).map(([k,v])=>
     `<option value="${k}"${k===typeVal?' selected':''}>${v}</option>`).join('');
   row.innerHTML = `
     <td><select id="cae-type-${idx}" style="font-size:8px;background:#0a0a0a;color:#336699;border:1px solid #1a3a2a" onchange="_caEditTypeChange(${idx})">${typeOpts}</select></td>
-    <td><input id="cae-from-${idx}" type="text" value="${escHtml(from)}" style="width:60px" placeholder="FROM/SYM"/></td>
-    <td><input id="cae-to-${idx}"   type="text" value="${escHtml(to)}"   style="width:60px" placeholder="TO"/></td>
+    <td><input id="cae-from-${idx}"      type="text" value="${escHtml(from)}"     style="width:65px" placeholder="FROM/SYM"/></td>
+    <td><input id="cae-from-isin-${idx}" type="text" value="${escHtml(fromIsin)}" style="width:90px;font-size:8px;font-family:monospace" placeholder="FROM ISIN"/></td>
+    <td><input id="cae-to-${idx}"        type="text" value="${escHtml(to)}"       style="width:65px" placeholder="TO SYM"/></td>
+    <td><input id="cae-to-isin-${idx}"   type="text" value="${escHtml(toIsin)}"   style="width:90px;font-size:8px;font-family:monospace" placeholder="TO ISIN"/></td>
     <td><input id="cae-date-${idx}" type="date" value="${date!=='--'?date:''}" style="width:100px"/></td>
-    <td><input id="cae-ratio-${idx}"type="number" value="${ratio}" step="any" style="width:50px"/></td>
+    <td><input id="cae-ratio-${idx}" type="number" value="${ratio}" step="any" style="width:50px"/></td>
     <td><input id="cae-note-${idx}" type="text" value="${escHtml(note)}" style="width:100px"/></td>
     <td style="white-space:nowrap">
       <span class="tx-save"   onclick="_caSaveEdit(${idx})" title="Save">&#10003;</span>
@@ -1227,16 +1241,25 @@ function _caEditTypeChange(idx){
   if(toInp) toInp.style.display = isCross ? '' : 'none';
 }
 async function _caSaveEdit(idx){
-  const type  = document.getElementById(`cae-type-${idx}`)?.value||'';
-  const from  = (document.getElementById(`cae-from-${idx}`)?.value||'').trim().toUpperCase();
-  const to    = (document.getElementById(`cae-to-${idx}`)?.value||'').trim().toUpperCase();
-  const date  = document.getElementById(`cae-date-${idx}`)?.value||'';
-  const ratio = parseFloat(document.getElementById(`cae-ratio-${idx}`)?.value||'0');
-  const note  = document.getElementById(`cae-note-${idx}`)?.value||'';
-  const isCross = CA_CROSS.has(type);
-  const body = {index: idx, type, date, note};
-  if(isCross){ body.from_symbol=from; body.to_symbol=to; if(!isNaN(ratio)&&ratio>0) body.ratio=ratio; }
-  else       { body.symbol=from; body.ratio=ratio; }
+  const type     = document.getElementById(`cae-type-${idx}`)?.value||'';
+  const from     = (document.getElementById(`cae-from-${idx}`)?.value||'').trim().toUpperCase();
+  const fromIsin = (document.getElementById(`cae-from-isin-${idx}`)?.value||'').trim().toUpperCase() || null;
+  const to       = (document.getElementById(`cae-to-${idx}`)?.value||'').trim().toUpperCase();
+  const toIsin   = (document.getElementById(`cae-to-isin-${idx}`)?.value||'').trim().toUpperCase() || null;
+  const date     = document.getElementById(`cae-date-${idx}`)?.value||'';
+  const ratio    = parseFloat(document.getElementById(`cae-ratio-${idx}`)?.value||'0');
+  const note     = document.getElementById(`cae-note-${idx}`)?.value||'';
+  const isCross  = CA_CROSS.has(type);
+  const body     = {index: idx, type, date, note};
+  if(isCross){
+    body.from_symbol = from; body.to_symbol = to;
+    if(fromIsin) body.from_isin = fromIsin;
+    if(toIsin)   body.to_isin   = toIsin;
+    if(!isNaN(ratio)&&ratio>0) body.ratio = ratio;
+  } else {
+    body.symbol = from; body.ratio = ratio;
+    if(fromIsin) body.isin = fromIsin;
+  }
   const res = await fetch('/api/corporate_actions/edit',{method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(res.ok){ pollCorporateActions(); pollPortfolio(); }
@@ -1254,10 +1277,14 @@ async function addCorporateAction(){
   const body     = {type, date, note};
   if(isCross){
     const from_symbol = (document.getElementById('ca-from-inp')?.value||'').trim().toUpperCase();
+    const from_isin   = (document.getElementById('ca-from-isin-inp')?.value||'').trim().toUpperCase() || null;
     const to_symbol   = (document.getElementById('ca-to-inp')?.value||'').trim().toUpperCase();
+    const to_isin     = (document.getElementById('ca-to-isin-inp')?.value||'').trim().toUpperCase() || null;
     if(!from_symbol||!to_symbol){ if(errEl) errEl.textContent='FROM and TO symbols required'; return; }
     body.from_symbol = from_symbol;
     body.to_symbol   = to_symbol;
+    if(from_isin) body.from_isin = from_isin;
+    if(to_isin)   body.to_isin   = to_isin;
     if(ratio!=null && !isNaN(ratio)) body.ratio = ratio;
   } else {
     const symbol = (document.getElementById('ca-sym-inp')?.value||'').trim().toUpperCase();
@@ -1270,7 +1297,7 @@ async function addCorporateAction(){
     headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const json = await res.json();
   if(!res.ok){ if(errEl) errEl.textContent=json.error||'Error'; return; }
-  ['ca-from-inp','ca-to-inp','ca-sym-inp','ca-date-inp','ca-ratio-inp','ca-note-inp']
+  ['ca-from-inp','ca-from-isin-inp','ca-to-inp','ca-to-isin-inp','ca-sym-inp','ca-date-inp','ca-ratio-inp','ca-note-inp']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   pollCorporateActions();
   pollPortfolio();
@@ -1394,7 +1421,7 @@ async function importYahooCsv(input){
     input.value = '';
   }
 }
-function _portEditTx(event, sym, idx, type, date, shares, price, acqType, isin){
+function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
   event.stopPropagation();
   const isBuy = type === 'buy';
   const acq   = acqType || (isBuy ? 'secondary' : 'market');
@@ -1427,44 +1454,73 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType, isin){
     <td><button class="tx-type-btn ${type}" id="txe-type-${escId(sym)}-${idx}"
       onclick="this.dataset.t=(this.dataset.t||'${type}')==='buy'?'sell':'buy';this.textContent=this.dataset.t.toUpperCase();this.className='tx-type-btn '+this.dataset.t;"
       data-t="${type}">${type.toUpperCase()}</button></td>
-    <td><input class="tx-edit-inp" type="text"   id="txe-sym-${escId(sym)}-${idx}"  value="${escHtml(sym)}" style="width:80px;text-transform:uppercase" title="Symbol" /></td>
-    <td><input class="tx-edit-inp" type="text"   id="txe-isin-${escId(sym)}-${idx}" value="${escHtml(isin||'')}" style="width:90px;font-size:8px" placeholder="ISIN" title="ISIN" /></td>
     <td><input class="tx-edit-inp" type="date"   id="txe-date-${escId(sym)}-${idx}" value="${date}" /></td>
     <td><input class="tx-edit-inp" type="number" id="txe-sh-${escId(sym)}-${idx}"   value="${shares}" step="any" min="0" /></td>
     <td><input class="tx-edit-inp" type="number" id="txe-pr-${escId(sym)}-${idx}"   value="${price}"  step="any" min="0" /></td>
-    <td>
-      <select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px"
+    <td><select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px"
         title="${isBuy ? 'How were these shares acquired?' : 'Why were these shares sold?'}">
         ${isBuy ? buyOpts : sellOpts}
-      </select>
-    </td>
+      </select></td>
+    <td></td><td></td>
     <td>
       <span class="tx-save"   onclick="_portSaveEditTx('${escJs(sym)}',${idx})" title="Save">&#10003;</span>
       <span class="tx-cancel" onclick="pollPortfolio()" title="Cancel">&#10005;</span>
     </td>`;
-  document.getElementById(`txe-sym-${escId(sym)}-${idx}`)?.focus();
+  document.getElementById(`txe-date-${escId(sym)}-${idx}`)?.focus();
 }
 async function _portSaveEditTx(sym, idx){
   const typeBtn = document.getElementById(`txe-type-${escId(sym)}-${idx}`);
-  const symInp  = document.getElementById(`txe-sym-${escId(sym)}-${idx}`);
-  const isinInp = document.getElementById(`txe-isin-${escId(sym)}-${idx}`);
   const dateInp = document.getElementById(`txe-date-${escId(sym)}-${idx}`);
   const shInp   = document.getElementById(`txe-sh-${escId(sym)}-${idx}`);
   const prInp   = document.getElementById(`txe-pr-${escId(sym)}-${idx}`);
   if(!typeBtn||!dateInp||!shInp||!prInp) return;
-  const type       = typeBtn.dataset.t || typeBtn.textContent.toLowerCase();
-  const new_symbol = (symInp?.value||sym).trim().toUpperCase();
-  const isin       = (isinInp?.value||'').trim().toUpperCase() || null;
-  const date       = dateInp.value;
-  const shares     = parseFloat(shInp.value);
-  const price      = parseFloat(prInp.value);
-  const acqSel     = document.getElementById(`txe-acq-${escId(sym)}-${idx}`);
-  const acq        = acqSel ? acqSel.value : 'secondary';
+  const type   = typeBtn.dataset.t || typeBtn.textContent.toLowerCase();
+  const date   = dateInp.value;
+  const shares = parseFloat(shInp.value);
+  const price  = parseFloat(prInp.value);
+  const acqSel = document.getElementById(`txe-acq-${escId(sym)}-${idx}`);
+  const acq    = acqSel ? acqSel.value : 'secondary';
   if(isNaN(shares)||shares<=0||isNaN(price)||price<0) return;
   const res = await fetch('/api/portfolio/edit_tx',{method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:sym, new_symbol, isin, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
+    body:JSON.stringify({symbol:sym, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
   if(res.ok) pollPortfolio();
+}
+
+// ── POSITION-LEVEL EDIT (symbol / name / ISIN / exchange) ────
+function _portEditEntry(sym, isin, name, exchange){
+  let bar = document.getElementById('port-entry-edit-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'port-entry-edit-bar';
+    bar.style.cssText = 'background:#0a1520;border:1px solid #1a3a2a;padding:5px 10px;display:flex;align-items:center;gap:8px;font-size:9px;margin-bottom:4px;flex-wrap:wrap';
+    document.getElementById('port-table').insertAdjacentElement('beforebegin', bar);
+  }
+  bar.innerHTML = `
+    <span style="color:#446688;letter-spacing:1px">EDIT POSITION:</span>
+    <label style="color:#334455">SYM<br><input id="pee-sym"  type="text" value="${escHtml(sym)}"  style="width:80px;text-transform:uppercase;background:#050f0a;color:#cce;border:1px solid #1a3a2a;padding:2px 4px" /></label>
+    <label style="color:#334455">ISIN<br><input id="pee-isin" type="text" value="${escHtml(isin)}" placeholder="ISIN" style="width:110px;font-family:monospace;font-size:8px;background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 4px" /></label>
+    <label style="color:#334455">NAME<br><input id="pee-name" type="text" value="${escHtml(name)}" style="width:160px;background:#050f0a;color:#aabbcc;border:1px solid #1a3a2a;padding:2px 4px" /></label>
+    <label style="color:#334455">EXCHANGE<br><select id="pee-exch" style="background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 4px;font-size:9px">
+      <option value="nse"    ${exchange==='nse'   ?'selected':''}>NSE</option>
+      <option value="bse"    ${exchange==='bse'   ?'selected':''}>BSE</option>
+      <option value="global" ${exchange==='global'?'selected':''}>GLOBAL</option>
+    </select></label>
+    <span class="tx-save"   onclick="_portSaveEntry('${escJs(sym)}')" title="Save" style="font-size:11px;cursor:pointer;color:#00cc66;padding:0 4px">&#10003; SAVE</span>
+    <span class="tx-cancel" onclick="document.getElementById('port-entry-edit-bar').remove()" title="Cancel" style="font-size:11px;cursor:pointer;color:#cc4444;padding:0 4px">&#10005; CANCEL</span>`;
+  document.getElementById('pee-sym')?.focus();
+}
+async function _portSaveEntry(oldSym){
+  const newSym  = (document.getElementById('pee-sym')?.value  ||'').trim().toUpperCase();
+  const isin    = (document.getElementById('pee-isin')?.value ||'').trim().toUpperCase() || null;
+  const name    = (document.getElementById('pee-name')?.value ||'').trim();
+  const exchange= document.getElementById('pee-exch')?.value  || 'nse';
+  if(!newSym) return;
+  const res = await fetch('/api/portfolio/edit_entry',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({symbol:oldSym, new_symbol:newSym, isin, name, exchange})});
+  if(res.ok){ document.getElementById('port-entry-edit-bar')?.remove(); pollPortfolio(); }
+  else { const j=await res.json(); alert(j.error||'Error saving entry'); }
 }
 
 // ── CAPITAL GAINS ────────────────────────────────────────────
@@ -1491,6 +1547,69 @@ async function pollCapitalGains(){
     _cgData = await res.json();
     _cgRender(_cgData);
   }catch(e){ console.error('CG poll error:',e); }
+}
+
+// ── CAPITAL GAINS OVERRIDE ───────────────────────────────────
+function _cgEditOverride(vi){
+  const ev = (window._cgVisEvents||[])[vi];
+  if(!ev) return;
+  // Remove any existing override row
+  document.querySelectorAll('.cg-ov-row').forEach(r=>r.remove());
+  const srcRow = document.getElementById(`cgr-${vi}`);
+  if(!srcRow) return;
+  const ov = ev.override || {};
+  const htOpts = ['','stcg','ltcg'].map(v=>
+    `<option value="${v}" ${(ov.holding_type||'')=== v?'selected':''}>${v||'AUTO'}</option>`).join('');
+  const ovRow = document.createElement('tr');
+  ovRow.className = 'cg-ov-row';
+  ovRow.style.cssText = 'background:#0a1020';
+  ovRow.innerHTML = `
+    <td colspan="2" style="color:#446688;font-size:8px;letter-spacing:1px;padding:4px 6px">OVERRIDE: ${escHtml(ev.symbol)} · ${ev.buy_date||'?'} → ${ev.sell_date||'open'}</td>
+    <td></td>
+    <td style="padding:3px 4px"><label style="font-size:8px;color:#446688">COST/SH<br>
+      <input id="cgo-cost" type="number" step="any" value="${ov.cost_per_share!=null?ov.cost_per_share:''}"
+        placeholder="${ev.effective_cost_per_share||''}" style="width:72px;background:#050f0a;color:#aabb99;border:1px solid #1a3a2a;padding:2px 3px;font-size:9px"/></label></td>
+    <td style="padding:3px 4px"><label style="font-size:8px;color:#446688">SELL/SH<br>
+      <input id="cgo-sell" type="number" step="any" value="${ov.sell_price_per_share!=null?ov.sell_price_per_share:''}"
+        placeholder="${ev.sell_price_per_share||''}" style="width:72px;background:#050f0a;color:#aabb99;border:1px solid #1a3a2a;padding:2px 3px;font-size:9px"/></label></td>
+    <td></td><td></td><td></td>
+    <td style="padding:3px 4px"><label style="font-size:8px;color:#446688">STCG/LTCG<br>
+      <select id="cgo-ht" style="background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 3px;font-size:9px">${htOpts}</select></label></td>
+    <td colspan="2" style="padding:3px 4px"><label style="font-size:8px;color:#446688">ISIN OVERRIDE<br>
+      <input id="cgo-isin" type="text" value="${escHtml(ov.isin||ev.isin||'')}"
+        style="width:100px;background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 3px;font-size:8px;font-family:monospace"/></label></td>
+    <td colspan="3" style="padding:3px 4px"><label style="font-size:8px;color:#446688">NOTE<br>
+      <input id="cgo-note" type="text" value="${escHtml(ov.note||'')}"
+        style="width:160px;background:#050f0a;color:#aabbcc;border:1px solid #1a3a2a;padding:2px 3px;font-size:9px"/></label></td>
+    <td style="padding:3px 4px;white-space:nowrap">
+      <span class="tx-save"   onclick="_cgSaveOverride('${escJs(ev.symbol)}','${ev.buy_date||''}','${ev.sell_date||''}')" title="Save override" style="cursor:pointer">&#10003;</span>
+      <span class="tx-cancel" onclick="this.closest('tr').remove()" title="Cancel" style="cursor:pointer">&#10005;</span>
+      ${(ev.override)?`<span onclick="_cgRemoveOverride('${escJs(ev.symbol)}','${ev.buy_date||''}','${ev.sell_date||''}')" title="Clear override" style="cursor:pointer;color:#cc4444;font-size:10px;margin-left:4px">&#128465;</span>`:''}
+    </td>`;
+  srcRow.insertAdjacentElement('afterend', ovRow);
+  document.getElementById('cgo-cost')?.focus();
+}
+async function _cgSaveOverride(sym, buyDate, sellDate){
+  const cost  = parseFloat(document.getElementById('cgo-cost')?.value||'');
+  const sell  = parseFloat(document.getElementById('cgo-sell')?.value||'');
+  const ht    = document.getElementById('cgo-ht')?.value || '';
+  const isin  = (document.getElementById('cgo-isin')?.value||'').trim().toUpperCase() || null;
+  const note  = document.getElementById('cgo-note')?.value || '';
+  const body  = {symbol:sym, buy_date:buyDate, sell_date:sellDate||null,
+    cost_per_share: isNaN(cost)?null:cost,
+    sell_price_per_share: isNaN(sell)?null:sell,
+    holding_type: ht||null, isin, note};
+  const res = await fetch('/api/capital_gains/override',{method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if(res.ok){ document.querySelectorAll('.cg-ov-row').forEach(r=>r.remove()); pollCapitalGains(); }
+  else { const j=await res.json(); alert(j.error||'Error saving override'); }
+}
+async function _cgRemoveOverride(sym, buyDate, sellDate){
+  if(!confirm('Remove override for '+sym+'?')) return;
+  const res = await fetch('/api/capital_gains/override/remove',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({symbol:sym, buy_date:buyDate, sell_date:sellDate||null})});
+  if(res.ok){ document.querySelectorAll('.cg-ov-row').forEach(r=>r.remove()); pollCapitalGains(); }
 }
 
 function _cgRender(data){
@@ -1565,9 +1684,10 @@ function _cgRender(data){
   if(!vis.length){
     const msg = !showUnreal ? 'NO REALISED EVENTS — TOGGLE "SHOW OPEN" TO SEE UNREALISED'
                             : 'NO CAPITAL GAINS EVENTS';
-    tbody.innerHTML = `<tr><td colspan="16" style="text-align:center;color:#446688;padding:14px;letter-spacing:1px">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="17" style="text-align:center;color:#446688;padding:14px;letter-spacing:1px">${msg}</td></tr>`;
   } else {
-    tbody.innerHTML = vis.map(ev=>{
+    window._cgVisEvents = vis;
+    tbody.innerHTML = vis.map((ev,vi)=>{
       const isLT   = ev.holding_period === 'long';
       const tCls   = isLT ? 'cg-ltcg' : 'cg-stcg';
       const tLbl   = isLT ? 'LTCG' : 'STCG';
@@ -1619,8 +1739,9 @@ function _cgRender(data){
       } else if (ev.gf_anomaly === 'sharp_rise') {
         anomBadge = '<span class="cg-anomaly-badge" title="Current price far above Jan-2018 value — possible unrecorded splits/bonus increasing share count">⚠️</span>';
       }
-      return `<tr${rowCls}>
+      return `<tr${rowCls} id="cgr-${vi}">
         <td><b style="color:#cce">${escHtml(ev.symbol)}</b>${acqBadge}${anomBadge}${unrLbl}</td>
+        <td style="font-size:8px;color:#446688;font-family:monospace;white-space:nowrap">${escHtml(ev.isin||'')}</td>
         <td style="font-size:8px;color:#446688">${ev.jurisdiction}</td>
         <td style="color:#7799aa">${ev.buy_date||'--'}</td>
         <td style="color:#7799aa">${ev.is_unrealized?'<i style="color:#33aadd">today</i>':(ev.sell_date||'--')}${soldBadge}</td>
@@ -1635,6 +1756,9 @@ function _cgRender(data){
         <td style="color:#cc5533">${ev.estimated_tax>0?'-'+fmt(ev.estimated_tax):'—'}</td>
         <td class="${aCls}"><b>${sign(ev.after_tax_gain,fmt)}</b></td>
         <td style="font-size:9px;color:#446688">${ev.fy}</td>
+        <td style="white-space:nowrap">
+          <span class="tx-edit" onclick="_cgEditOverride(${vi})" title="Override computed values">&#9998;</span>
+        </td>
       </tr>`;
     }).join('');
   }
