@@ -458,6 +458,17 @@
     <button class="port-action-btn import-btn" onclick="document.getElementById('port-csv-inp').click()">&#8593; CSV</button>
     <input type="file" id="port-csv-inp" accept=".csv" style="display:none" onchange="importYahooCsv(this)" />
     <span id="port-import-msg" style="font-size:9px;color:#888;"></span>
+    <span style="flex:1"></span>
+    <span style="font-size:8px;color:#99AABB;letter-spacing:.5px;margin-right:2px">BHAVCOPY:</span>
+    <a id="bhav-nse-lnk" href="#" target="_blank"
+       style="font-size:8px;color:#1A5580;letter-spacing:.5px;border:1px solid #C8C4BC;padding:1px 7px;border-radius:2px;text-decoration:none;background:#EAF0F6"
+       title="Open NSE bhavcopy for selected date">NSE</a>
+    <a id="bhav-bse-lnk" href="#" target="_blank"
+       style="font-size:8px;color:#7A4400;letter-spacing:.5px;border:1px solid #C8C4BC;padding:1px 7px;border-radius:2px;text-decoration:none;background:#FFF3E8;margin-left:3px"
+       title="Open BSE bhavcopy for selected date">BSE</a>
+    <input type="date" id="bhav-date-inp"
+       style="font-size:8px;background:#F0EDE6;border:1px solid #C8C4BC;color:#222;padding:1px 4px;border-radius:2px;margin-left:3px;font-family:inherit"
+       title="Date for bhavcopy links" />
   </div>
   <div id="port-action-panel">
     <span class="pap-lbl" id="pap-action-lbl"></span>
@@ -673,6 +684,35 @@
 <script>
 // ── UTILITIES ────────────────────────────────────────────────
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+// ── BHAVCOPY LINKS ────────────────────────────────────────
+function _bhavUpdateLinks(dateStr){
+  if(!dateStr) return;
+  const d = dateStr.replace(/-/g,'');          // YYYYMMDD
+  const dd = dateStr.slice(8,10);
+  const mm = dateStr.slice(5,7);
+  const yyyy = dateStr.slice(0,4);
+  const nseUrl = `https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${d}_F_0000.csv.zip`;
+  const bseUrl = `https://www.bseindia.com/download/BhavCopy/Equity/EQ${dd}${mm}${yyyy}_CSV.ZIP`;
+  const nEl = document.getElementById('bhav-nse-lnk');
+  const bEl = document.getElementById('bhav-bse-lnk');
+  if(nEl){ nEl.href = nseUrl; nEl.title = `NSE bhavcopy ${dateStr}\n${nseUrl}`; }
+  if(bEl){ bEl.href = bseUrl; bEl.title = `BSE bhavcopy ${dateStr}\n${bseUrl}`; }
+}
+(function _bhavInit(){
+  function _init(){
+    const inp = document.getElementById('bhav-date-inp');
+    if(!inp) return;
+    // Default to yesterday
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const def = y.toISOString().slice(0,10);
+    inp.value = def;
+    _bhavUpdateLinks(def);
+    inp.addEventListener('change', ()=>_bhavUpdateLinks(inp.value));
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _init);
+  else _init();
+})();
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 function escJs(s)  { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 function escId(s)  { return String(s).replace(/[^A-Za-z0-9_-]/g,'_'); }

@@ -406,7 +406,8 @@
         "price": 4828.0,
         "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE849A01020"
   },
   {
     "symbol": "JBCHEPHARM",
@@ -427,7 +428,8 @@
         "price": 1540.0,
         "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE572A01036"
   },
   {
     "symbol": "SPARC",
@@ -448,6 +450,7 @@
         "price": 139.8427,
         "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE232I01014"
   }
 ]
