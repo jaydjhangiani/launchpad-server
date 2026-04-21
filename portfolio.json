@@ -8,7 +8,8 @@
         "date": "2026-02-12",
         "type": "buy",
         "shares": 100.0,
-        "price": 11710.0
+        "price": 11710.0,
+        "acquisition_type": "secondary"
       }
     ],
     "isin": "INE179A01014"
@@ -383,6 +384,69 @@
         "shares": 456.0,
         "price": 34.0,
         "acquisition_type": "merger"
+      }
+    ]
+  },
+  {
+    "symbol": "TRENT",
+    "name": "TRENT LIMITED",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-02-12",
+        "type": "buy",
+        "shares": 2000.0,
+        "price": 102.0,
+        "acquisition_type": "secondary"
+      },
+      {
+        "date": "2025-02-27",
+        "type": "sell",
+        "shares": 2000.0,
+        "price": 4828.0,
+        "acquisition_type": "market"
+      }
+    ]
+  },
+  {
+    "symbol": "JBCHEPHARM",
+    "name": "J.B. CHEMICALS & PHARMA",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-01-31",
+        "type": "buy",
+        "shares": 3000.0,
+        "price": 55.615,
+        "acquisition_type": "secondary"
+      },
+      {
+        "date": "2025-02-27",
+        "type": "sell",
+        "shares": 3000.0,
+        "price": 1540.0,
+        "acquisition_type": "market"
+      }
+    ]
+  },
+  {
+    "symbol": "SPARC",
+    "name": "SUN PHARMA ADVANCED RESEARCH",
+    "exchange": "nse",
+    "transactions": [
+      {
+        "date": "2011-01-18",
+        "type": "buy",
+        "shares": 5066.0,
+        "price": 87.4,
+        "acquisition_type": "secondary"
+      },
+      {
+        "date": "2025-02-14",
+        "type": "sell",
+        "shares": 5066.0,
+        "price": 139.8427,
+        "acquisition_type": "market"
       }
     ]
   }
