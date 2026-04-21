@@ -1,7 +1,7 @@
 [
   {
     "symbol": "PGHH",
-    "name": "PGHH",
+    "name": "P&G HYGIENE & HEALTH CARE",
     "exchange": "nse",
     "transactions": [
       {
@@ -10,11 +10,12 @@
         "shares": 100.0,
         "price": 11710.0
       }
-    ]
+    ],
+    "isin": "INE179A01014"
   },
   {
     "symbol": "HINDUNILVR",
-    "name": "HINDUNILVR",
+    "name": "HINDUSTAN UNILEVER LTD.",
     "exchange": "nse",
     "transactions": [
       {
@@ -23,24 +24,27 @@
         "shares": 2200.0,
         "price": 300.92
       }
-    ]
+    ],
+    "isin": "INE030A01027"
   },
   {
     "symbol": "ICICIGI",
-    "name": "ICICIGI",
+    "name": "ICICI LOMBARD GIC LIMITED",
     "exchange": "nse",
     "transactions": [
       {
         "date": "2015-02-10",
         "type": "buy",
         "shares": 2500.0,
-        "price": 175.0
+        "price": 175.0,
+        "acquisition_type": "unlisted"
       }
-    ]
+    ],
+    "isin": "INE765G01017"
   },
   {
     "symbol": "ARE&M",
-    "name": "ARE&M",
+    "name": "AMARA RAJA ENERGY MOB LTD",
     "exchange": "nse",
     "transactions": [
       {
@@ -49,11 +53,12 @@
         "shares": 2500.0,
         "price": 255.44
       }
-    ]
+    ],
+    "isin": "INE885A01032"
   },
   {
     "symbol": "KIRLOSBROS",
-    "name": "KIRLOSBROS",
+    "name": "KIRLOSKAR BROTHERS LTD",
     "exchange": "nse",
     "transactions": [
       {
@@ -62,11 +67,12 @@
         "shares": 1000.0,
         "price": 165.13
       }
-    ]
+    ],
+    "isin": "INE732A01036"
   },
   {
     "symbol": "INDHOTEL",
-    "name": "INDHOTEL",
+    "name": "THE INDIAN HOTELS CO. LTD",
     "exchange": "nse",
     "transactions": [
       {
@@ -75,11 +81,12 @@
         "shares": 2000.0,
         "price": 70.48
       }
-    ]
+    ],
+    "isin": "INE053A01029"
   },
   {
     "symbol": "TCS",
-    "name": "TCS",
+    "name": "TATA CONSULTANCY SERV LT",
     "exchange": "nse",
     "transactions": [
       {
@@ -88,24 +95,27 @@
         "shares": 400.0,
         "price": 734.63
       }
-    ]
+    ],
+    "isin": "INE467B01029"
   },
   {
     "symbol": "TATASTEEL",
-    "name": "TATASTEEL",
+    "name": "TATA STEEL LIMITED",
     "exchange": "nse",
     "transactions": [
       {
         "date": "2023-12-01",
         "type": "buy",
         "shares": 6700.0,
-        "price": 51.622388
+        "price": 51.622388,
+        "acquisition_type": "merger"
       }
-    ]
+    ],
+    "isin": "INE081A01020"
   },
   {
     "symbol": "BHARATFORG",
-    "name": "BHARATFORG",
+    "name": "BHARAT FORGE LTD",
     "exchange": "nse",
     "transactions": [
       {
@@ -114,7 +124,8 @@
         "shares": 500.0,
         "price": 133.82
       }
-    ]
+    ],
+    "isin": "INE465A01025"
   },
   {
     "symbol": "0P000134CG",
@@ -131,41 +142,47 @@
   },
   {
     "symbol": "POWERGRID",
-    "name": "POWERGRID",
+    "name": "POWER GRID CORP. LTD.",
     "exchange": "nse",
     "transactions": [
       {
         "date": "2007-10-04",
         "type": "buy",
         "shares": 286.0,
-        "price": 52.0
+        "price": 52.0,
+        "acquisition_type": "ipo"
       },
       {
         "date": "2021-07-29",
         "type": "buy",
         "shares": 95.0,
-        "price": 0.0
+        "price": 0.0,
+        "acquisition_type": "bonus"
       },
       {
         "date": "2023-09-12",
         "type": "buy",
         "shares": 127.0,
-        "price": 0.0
+        "price": 0.0,
+        "acquisition_type": "bonus"
       }
-    ]
+    ],
+    "isin": "INE752E01010"
   },
   {
     "symbol": "NTPC",
-    "name": "NTPC",
+    "name": "NTPC LTD",
     "exchange": "nse",
     "transactions": [
       {
         "date": "2004-11-05",
         "type": "buy",
         "shares": 256.0,
-        "price": 51.83
+        "price": 51.83,
+        "acquisition_type": "ipo"
       }
-    ]
+    ],
+    "isin": "INE733E01010"
   },
   {
     "symbol": "JETAIRWAYS",
@@ -176,7 +193,8 @@
         "date": "2005-03-11",
         "type": "buy",
         "shares": 300.0,
-        "price": 1050.0
+        "price": 1050.0,
+        "acquisition_type": "ipo"
       }
     ]
   },
@@ -202,13 +220,15 @@
         "date": "2011-02-07",
         "type": "buy",
         "shares": 333.0,
-        "price": 0.0
+        "price": 0.0,
+        "acquisition_type": "demerger"
       },
       {
         "date": "2026-01-29",
         "type": "sell",
         "shares": 333.0,
-        "price": 1.31
+        "price": 1.31,
+        "acquisition_type": "market"
       }
     ]
   },
@@ -221,38 +241,43 @@
         "date": "2011-02-07",
         "type": "buy",
         "shares": 1000.0,
-        "price": 0.01
+        "price": 0.01,
+        "acquisition_type": "demerger"
       },
       {
         "date": "2026-01-29",
         "type": "sell",
         "shares": 1000.0,
-        "price": 0.45
+        "price": 0.45,
+        "acquisition_type": "market"
       }
     ]
   },
   {
     "symbol": "PRAXIS",
-    "name": "PRAXIS",
+    "name": "PRAXIS HOME RETAIL LTD",
     "exchange": "nse",
     "transactions": [
       {
         "date": "2011-02-07",
         "type": "buy",
         "shares": 50.0,
-        "price": 0.0
+        "price": 0.0,
+        "acquisition_type": "demerger"
       },
       {
         "date": "2026-01-29",
         "type": "sell",
         "shares": 50.0,
-        "price": 7.22
+        "price": 7.22,
+        "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE546Y01022"
   },
   {
     "symbol": "POONAWALLA",
-    "name": "POONAWALLA",
+    "name": "POONAWALLA FINCORP LTD",
     "exchange": "nse",
     "transactions": [
       {
@@ -265,13 +290,15 @@
         "date": "2025-02-14",
         "type": "sell",
         "shares": 1500.0,
-        "price": 292.4086
+        "price": 292.4086,
+        "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE511C01022"
   },
   {
     "symbol": "IDFCFIRSTB",
-    "name": "IDFCFIRSTB",
+    "name": "IDFC FIRST BANK LIMITED",
     "exchange": "nse",
     "transactions": [
       {
@@ -284,19 +311,22 @@
         "date": "2024-10-10",
         "type": "buy",
         "shares": 706.0,
-        "price": 21.96034
+        "price": 21.96034,
+        "acquisition_type": "merger"
       },
       {
         "date": "2025-02-14",
         "type": "sell",
         "shares": 1162.0,
-        "price": 60.8824
+        "price": 60.8824,
+        "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE092T01019"
   },
   {
     "symbol": "ABFRL",
-    "name": "ABFRL",
+    "name": "ADITYA BIRLA FASHION & RT",
     "exchange": "nse",
     "transactions": [
       {
@@ -309,9 +339,11 @@
         "date": "2025-02-14",
         "type": "sell",
         "shares": 200.0,
-        "price": 252.7359
+        "price": 252.7359,
+        "acquisition_type": "market"
       }
-    ]
+    ],
+    "isin": "INE647O01011"
   },
   {
     "symbol": "TATASTLLP",
@@ -328,7 +360,8 @@
         "date": "2023-11-30",
         "type": "sell",
         "shares": 1000.0,
-        "price": 345.87
+        "price": 345.87,
+        "acquisition_type": "merger"
       }
     ]
   },
@@ -341,13 +374,15 @@
         "date": "2005-08-01",
         "type": "buy",
         "shares": 456.0,
-        "price": 34.0
+        "price": 34.0,
+        "acquisition_type": "ipo"
       },
       {
         "date": "2024-10-28",
         "type": "sell",
         "shares": 456.0,
-        "price": 34.0
+        "price": 34.0,
+        "acquisition_type": "merger"
       }
     ]
   }
