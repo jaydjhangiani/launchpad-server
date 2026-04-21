@@ -909,9 +909,10 @@ function _portRender(data){
           ? `<span class="port-status status-closed">Closed</span>`
           : `<span class="port-status status-open">Open</span>`;
       const symLabel = _portShowName ? escHtml(p.name||p.symbol) : escHtml(p.symbol);
+      const isinLine = p.isin ? `<br><span style="font-size:0.72em;color:#446;letter-spacing:0.04em;font-weight:normal">${escHtml(p.isin)}</span>` : '';
       const qb = (!isClosed && !isNoData) ? `<button class="port-qbuy"  onclick="event.stopPropagation();_portQuickTx('${escJs(p.symbol)}','${p.exchange||'nse'}','buy')"  title="Quick BUY">B</button><button class="port-qsell" onclick="event.stopPropagation();_portQuickTx('${escJs(p.symbol)}','${p.exchange||'nse'}','sell')" title="Quick SELL">S</button>` : '';
       html += `<tr class="${rowCls}" onclick="_portToggleTx('${escJs(p.symbol)}')">
-        <td><b>${symLabel}</b></td>
+        <td><b>${symLabel}</b>${isinLine}</td>
         <td>${statusBadge}</td>
         <td>${(isClosed||isNoData)?'<span style="color:#333">--</span>':sharesDisp}</td>
         <td>${(isClosed||isNoData)?'<span style="color:#333">--</span>':fmtI(p.avg_cost)}</td>

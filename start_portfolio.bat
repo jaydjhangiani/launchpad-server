@@ -1,5 +1,5 @@
 @echo off
-title Ruliad Capital — Portfolio
+title Ruliad Capital - Portfolio
 cd /d C:\Dev\launchpad_app
 
 echo.

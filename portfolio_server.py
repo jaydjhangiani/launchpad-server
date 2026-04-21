@@ -620,6 +620,7 @@ def api_portfolio():
             "total_pnl":    round(total_pnl, 2) if total_pnl is not None else None,
             "cagr": cagr, "inception_date": inception_date,
             "exchange":     entry.get("exchange", "nse"),
+            "isin":         entry.get("isin"),
             "transactions": tx_rows,
         })
 
