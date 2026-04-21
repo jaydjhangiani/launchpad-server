@@ -970,7 +970,7 @@ function _portRender(data){
           <td>${pnl}</td>
           <td title="XIRR for this lot">${xirrTx}</td>
           <td>
-            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}')" title="Edit">&#9998;</span>
+            <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}','${escJs(p.isin||'')}')" title="Edit">&#9998;</span>
             <span class="tx-del"  onclick="removePortfolioTx('${escJs(p.symbol)}',${i})" title="Delete">&#10005;</span>
           </td>
         </tr>`;
@@ -1394,7 +1394,7 @@ async function importYahooCsv(input){
     input.value = '';
   }
 }
-function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
+function _portEditTx(event, sym, idx, type, date, shares, price, acqType, isin){
   event.stopPropagation();
   const isBuy = type === 'buy';
   const acq   = acqType || (isBuy ? 'secondary' : 'market');
@@ -1427,10 +1427,12 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
     <td><button class="tx-type-btn ${type}" id="txe-type-${escId(sym)}-${idx}"
       onclick="this.dataset.t=(this.dataset.t||'${type}')==='buy'?'sell':'buy';this.textContent=this.dataset.t.toUpperCase();this.className='tx-type-btn '+this.dataset.t;"
       data-t="${type}">${type.toUpperCase()}</button></td>
-    <td><input class="tx-edit-inp" type="date" id="txe-date-${escId(sym)}-${idx}" value="${date}" /></td>
-    <td><input class="tx-edit-inp" type="number" id="txe-sh-${escId(sym)}-${idx}" value="${shares}" step="any" min="0" /></td>
-    <td><input class="tx-edit-inp" type="number" id="txe-pr-${escId(sym)}-${idx}" value="${price}" step="any" min="0" /></td>
-    <td colspan="2">
+    <td><input class="tx-edit-inp" type="text"   id="txe-sym-${escId(sym)}-${idx}"  value="${escHtml(sym)}" style="width:80px;text-transform:uppercase" title="Symbol" /></td>
+    <td><input class="tx-edit-inp" type="text"   id="txe-isin-${escId(sym)}-${idx}" value="${escHtml(isin||'')}" style="width:90px;font-size:8px" placeholder="ISIN" title="ISIN" /></td>
+    <td><input class="tx-edit-inp" type="date"   id="txe-date-${escId(sym)}-${idx}" value="${date}" /></td>
+    <td><input class="tx-edit-inp" type="number" id="txe-sh-${escId(sym)}-${idx}"   value="${shares}" step="any" min="0" /></td>
+    <td><input class="tx-edit-inp" type="number" id="txe-pr-${escId(sym)}-${idx}"   value="${price}"  step="any" min="0" /></td>
+    <td>
       <select class="tx-edit-inp" id="txe-acq-${escId(sym)}-${idx}" style="font-size:9px;padding:1px 3px"
         title="${isBuy ? 'How were these shares acquired?' : 'Why were these shares sold?'}">
         ${isBuy ? buyOpts : sellOpts}
@@ -1440,24 +1442,28 @@ function _portEditTx(event, sym, idx, type, date, shares, price, acqType){
       <span class="tx-save"   onclick="_portSaveEditTx('${escJs(sym)}',${idx})" title="Save">&#10003;</span>
       <span class="tx-cancel" onclick="pollPortfolio()" title="Cancel">&#10005;</span>
     </td>`;
-  document.getElementById(`txe-date-${escId(sym)}-${idx}`)?.focus();
+  document.getElementById(`txe-sym-${escId(sym)}-${idx}`)?.focus();
 }
 async function _portSaveEditTx(sym, idx){
   const typeBtn = document.getElementById(`txe-type-${escId(sym)}-${idx}`);
+  const symInp  = document.getElementById(`txe-sym-${escId(sym)}-${idx}`);
+  const isinInp = document.getElementById(`txe-isin-${escId(sym)}-${idx}`);
   const dateInp = document.getElementById(`txe-date-${escId(sym)}-${idx}`);
   const shInp   = document.getElementById(`txe-sh-${escId(sym)}-${idx}`);
   const prInp   = document.getElementById(`txe-pr-${escId(sym)}-${idx}`);
   if(!typeBtn||!dateInp||!shInp||!prInp) return;
-  const type   = typeBtn.dataset.t || typeBtn.textContent.toLowerCase();
-  const date   = dateInp.value;
-  const shares = parseFloat(shInp.value);
-  const price  = parseFloat(prInp.value);
-  const acqSel = document.getElementById(`txe-acq-${escId(sym)}-${idx}`);
-  const acq    = acqSel ? acqSel.value : 'secondary';
+  const type       = typeBtn.dataset.t || typeBtn.textContent.toLowerCase();
+  const new_symbol = (symInp?.value||sym).trim().toUpperCase();
+  const isin       = (isinInp?.value||'').trim().toUpperCase() || null;
+  const date       = dateInp.value;
+  const shares     = parseFloat(shInp.value);
+  const price      = parseFloat(prInp.value);
+  const acqSel     = document.getElementById(`txe-acq-${escId(sym)}-${idx}`);
+  const acq        = acqSel ? acqSel.value : 'secondary';
   if(isNaN(shares)||shares<=0||isNaN(price)||price<0) return;
   const res = await fetch('/api/portfolio/edit_tx',{method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:sym, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
+    body:JSON.stringify({symbol:sym, new_symbol, isin, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
   if(res.ok) pollPortfolio();
 }
 

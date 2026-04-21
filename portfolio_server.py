@@ -749,8 +749,10 @@ def api_portfolio_remove_tx():
 
 @app.route("/api/portfolio/edit_tx", methods=["POST"])
 def api_portfolio_edit_tx():
-    body   = request.get_json(force=True, silent=True) or {}
-    symbol = (body.get("symbol") or "").strip().upper()
+    body       = request.get_json(force=True, silent=True) or {}
+    symbol     = (body.get("symbol")     or "").strip().upper()
+    new_symbol = (body.get("new_symbol") or symbol).strip().upper() or symbol
+    isin       = (body.get("isin")       or "").strip().upper() or None
     try:   idx = int(body.get("tx_index", -1))
     except (TypeError, ValueError): return jsonify({"error": "Invalid tx_index"}), 400
     tx_type = (body.get("type") or "buy").strip().lower()
@@ -774,7 +776,19 @@ def api_portfolio_edit_tx():
             if v > 0: tx[field] = round(v, 2)
         except (TypeError, ValueError):
             pass
-    txs[idx] = tx
+    if new_symbol != symbol:
+        # Move tx to a different symbol entry (rename / correction)
+        txs.pop(idx)
+        target = next((e for e in entries if e["symbol"] == new_symbol), None)
+        if target is None:
+            target = {"symbol": new_symbol, "name": new_symbol,
+                      "exchange": entry.get("exchange", "nse"), "transactions": []}
+            entries.append(target)
+        target["transactions"].append(tx)
+        if isin: target["isin"] = isin
+    else:
+        txs[idx] = tx
+        if isin: entry["isin"] = isin
     _save_portfolio(entries)
     return jsonify({"status": "ok"})
 
