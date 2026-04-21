@@ -807,29 +807,6 @@ def api_portfolio_edit_tx():
     return jsonify({"status": "ok"})
 
 
-@app.route("/api/portfolio/edit_entry", methods=["POST"])
-def api_portfolio_edit_entry():
-    body       = request.get_json(force=True, silent=True) or {}
-    symbol     = (body.get("symbol")     or "").strip().upper()
-    new_symbol = (body.get("new_symbol") or symbol).strip().upper() or symbol
-    isin       = (body.get("isin")       or "").strip().upper() or None
-    name       = (body.get("name")       or "").strip()
-    exchange   = (body.get("exchange")   or "nse").strip().lower()
-    if not symbol: return jsonify({"error": "symbol required"}), 400
-    entries = [_migrate_entry(e) for e in _load_portfolio()]
-    entry   = next((e for e in entries if e["symbol"] == symbol), None)
-    if not entry: return jsonify({"error": "Symbol not found"}), 404
-    if new_symbol != symbol:
-        if any(e["symbol"] == new_symbol for e in entries):
-            return jsonify({"error": f"{new_symbol} already exists"}), 409
-        entry["symbol"] = new_symbol
-    if isin:     entry["isin"]     = isin
-    if name:     entry["name"]     = name
-    if exchange: entry["exchange"] = exchange
-    _save_portfolio(entries)
-    return jsonify({"status": "ok"})
-
-
 @app.route("/api/portfolio/remove", methods=["POST"])
 def api_portfolio_remove():
     body   = request.get_json(force=True, silent=True) or {}

@@ -978,7 +978,6 @@ function _portRender(data){
           ${qb}
           <span class="port-expand${isOpen?' open':''}" id="port-exp-${escId(p.symbol)}" title="${txCount} tx">&#9660;</span>
           <span class="port-rm" onclick="event.stopPropagation();removePortfolioPosition('${escJs(p.symbol)}')" title="Remove all">&#10005;</span>
-          <span class="tx-edit" onclick="event.stopPropagation();_portEditEntry('${escJs(p.symbol)}','${escJs(p.isin||'')}','${escJs(p.name||p.symbol)}','${p.exchange||'nse'}')" title="Edit symbol/ISIN/name">&#9998;</span>
         </td>
       </tr>`;
       const txHtml = (p.transactions||[]).map((tx,i)=>{
@@ -1529,42 +1528,6 @@ async function _portSaveEditTx(sym, idx){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({symbol:sym, tx_index:idx, type, date, shares, price, acquisition_type:acq})});
   if(res.ok) pollPortfolio();
-}
-
-// ── POSITION-LEVEL EDIT (symbol / name / ISIN / exchange) ────
-function _portEditEntry(sym, isin, name, exchange){
-  let bar = document.getElementById('port-entry-edit-bar');
-  if(!bar){
-    bar = document.createElement('div');
-    bar.id = 'port-entry-edit-bar';
-    bar.style.cssText = 'background:#0a1520;border:1px solid #1a3a2a;padding:5px 10px;display:flex;align-items:center;gap:8px;font-size:9px;margin-bottom:4px;flex-wrap:wrap';
-    document.getElementById('port-table').insertAdjacentElement('beforebegin', bar);
-  }
-  bar.innerHTML = `
-    <span style="color:#446688;letter-spacing:1px">EDIT POSITION:</span>
-    <label style="color:#334455">SYM<br><input id="pee-sym"  type="text" value="${escHtml(sym)}"  style="width:80px;text-transform:uppercase;background:#050f0a;color:#cce;border:1px solid #1a3a2a;padding:2px 4px" /></label>
-    <label style="color:#334455">ISIN<br><input id="pee-isin" type="text" value="${escHtml(isin)}" placeholder="ISIN" style="width:110px;font-family:monospace;font-size:8px;background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 4px" /></label>
-    <label style="color:#334455">NAME<br><input id="pee-name" type="text" value="${escHtml(name)}" style="width:160px;background:#050f0a;color:#aabbcc;border:1px solid #1a3a2a;padding:2px 4px" /></label>
-    <label style="color:#334455">EXCHANGE<br><select id="pee-exch" style="background:#050f0a;color:#88aacc;border:1px solid #1a3a2a;padding:2px 4px;font-size:9px">
-      <option value="nse"    ${exchange==='nse'   ?'selected':''}>NSE</option>
-      <option value="bse"    ${exchange==='bse'   ?'selected':''}>BSE</option>
-      <option value="global" ${exchange==='global'?'selected':''}>GLOBAL</option>
-    </select></label>
-    <span class="tx-save"   onclick="_portSaveEntry('${escJs(sym)}')" title="Save" style="font-size:11px;cursor:pointer;color:#00cc66;padding:0 4px">&#10003; SAVE</span>
-    <span class="tx-cancel" onclick="document.getElementById('port-entry-edit-bar').remove()" title="Cancel" style="font-size:11px;cursor:pointer;color:#cc4444;padding:0 4px">&#10005; CANCEL</span>`;
-  document.getElementById('pee-sym')?.focus();
-}
-async function _portSaveEntry(oldSym){
-  const newSym  = (document.getElementById('pee-sym')?.value  ||'').trim().toUpperCase();
-  const isin    = (document.getElementById('pee-isin')?.value ||'').trim().toUpperCase() || null;
-  const name    = (document.getElementById('pee-name')?.value ||'').trim();
-  const exchange= document.getElementById('pee-exch')?.value  || 'nse';
-  if(!newSym) return;
-  const res = await fetch('/api/portfolio/edit_entry',{method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({symbol:oldSym, new_symbol:newSym, isin, name, exchange})});
-  if(res.ok){ document.getElementById('port-entry-edit-bar')?.remove(); pollPortfolio(); }
-  else { const j=await res.json(); alert(j.error||'Error saving entry'); }
 }
 
 // ── CAPITAL GAINS ────────────────────────────────────────────
