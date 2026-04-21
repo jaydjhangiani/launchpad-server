@@ -957,7 +957,11 @@ function _portRender(data){
         const acqCls  = 'acq-'+acq.replace(/[-_]/g,'');
         const badgeTip= isBuy ? `Acquisition: ${acq}` : `Sell reason: ${acq}`;
         const acqBadge= `<span class="acq-badge ${acqCls}" title="${badgeTip}">${acqLbl}</span>`;
-        // XIRR cell
+        // XIRR cell — buy rows = HOLD XIRR (to today at LTP), sell rows = REAL XIRR (actual)
+        const xirrLabel = isBuy ? 'HOLD XIRR' : 'REAL XIRR';
+        const xirrTip   = isBuy
+          ? 'HOLD XIRR: annualised return if you still held this lot at today\'s LTP'
+          : 'REAL XIRR: annualised return on the actual buy→sell cash flows';
         let xirrTx;
         if(tx.xirr_infinite){
           xirrTx = `<span style="color:#ddaa33;font-size:11px" title="Zero-cost acquisition (∞ return on zero investment)">&#8734;</span>`;
@@ -974,7 +978,7 @@ function _portRender(data){
           <td>${fmtI(tx.price)}</td>
           <td>${fmtI(tx.value)}</td>
           <td>${pnl}</td>
-          <td title="XIRR for this lot">${xirrTx}</td>
+          <td title="${xirrTip}"><span style="font-size:7px;color:#99AABB;letter-spacing:.5px">${xirrLabel}</span><br>${xirrTx}</td>
           <td>
             <span class="tx-edit" onclick="_portEditTx(event,'${escJs(p.symbol)}',${i},'${tx.type}','${tx.date||''}',${tx.shares},${tx.price},'${acq}')" title="Edit">&#9998;</span>
             <span class="tx-del"  onclick="removePortfolioTx('${escJs(p.symbol)}',${i})" title="Delete">&#10005;</span>
@@ -987,7 +991,7 @@ function _portRender(data){
             <table>
               <thead><tr>
                 <th>TYPE</th><th>DATE</th><th>SHARES</th><th>PRICE &#8377;</th>
-                <th>VALUE &#8377;</th><th>REAL P&amp;L &#8377;</th><th>XIRR%</th><th></th>
+                <th>VALUE &#8377;</th><th>REAL P&amp;L &#8377;</th><th title="BUY rows: HOLD XIRR (to today). SELL rows: REAL XIRR (actual realised)">XIRR%</th><th></th>
               </tr></thead>
               <tbody>${txHtml}</tbody>
             </table>
