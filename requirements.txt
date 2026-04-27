@@ -3,3 +3,4 @@ flask-cors
 yfinance
 psycopg2-binary
 python-dotenv
+gunicorn 
