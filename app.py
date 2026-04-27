@@ -91,5 +91,8 @@ _updater_thread.start()
 _mktcap_thread = threading.Thread(target=mktcap_updater, daemon=True)
 _mktcap_thread.start()
 
+import keep_alive as _ka
+_ka.start()
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
