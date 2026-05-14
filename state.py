@@ -33,4 +33,4 @@ last_good_fetch_time: float = 0
 PAGE_SIZE      = 12   # must match frontend PAGE_SIZE constant
 BATCH_SIZE     = 50
 DEAD_THRESHOLD = 3
-FETCH_INTERVAL = 30   # seconds between background refreshes
+FETCH_INTERVAL = 120  # seconds between background refreshes

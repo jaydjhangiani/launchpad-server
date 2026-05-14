@@ -38,7 +38,7 @@ def fetch_symbols_batch(symbols: list) -> dict:
             interval="1h",
             progress=False,
             auto_adjust=True,
-            threads=True,
+            threads=False,
         )
         if df.empty:
             return result
@@ -158,7 +158,7 @@ def fetch_global_batch(symbols: list) -> dict:
             interval="1d",
             progress=False,
             auto_adjust=True,
-            threads=True,
+            threads=False,
         )
         if df.empty:
             return result
