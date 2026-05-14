@@ -1,5 +1,6 @@
 """Price and market-cap fetchers plus background update threads."""
 
+import gc
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -76,6 +77,8 @@ def fetch_symbols_batch(symbols: list) -> dict:
             except Exception:
                 pass
 
+        del df, close_df, vol_df
+
     except Exception as e:
         print(f"[WARN] batch fetch error ({len(symbols)} syms): {e}")
 
@@ -114,10 +117,12 @@ def fetch_bse_batch(symbols: list) -> dict:
             try:
                 hist = yf.Ticker(ticker_str).history(period="5d", interval="1d", auto_adjust=True)
                 if hist.empty:
+                    del hist
                     continue
                 closes = hist["Close"].dropna()
                 vols   = hist["Volume"].dropna()
                 if closes.empty:
+                    del hist
                     continue
                 price = float(closes.iloc[-1])
                 prev  = float(closes.iloc[-2]) if len(closes) >= 2 else price
@@ -130,6 +135,7 @@ def fetch_bse_batch(symbols: list) -> dict:
                     "change_pct": round(pct,   2),
                     "volume":     vol,
                 }
+                del hist
             except Exception:
                 pass
         time.sleep(0.12)
@@ -184,6 +190,7 @@ def fetch_global_batch(symbols: list) -> dict:
                 }
             except Exception:
                 pass
+        del df, close_df, vol_df
     except Exception as e:
         print(f"[WARN] global batch fetch error ({len(symbols)} syms): {e}")
     return result
@@ -306,6 +313,7 @@ def update_all_prices() -> None:
     elapsed = round(time.time() - t0, 1)
     status  = f"Updated {len(new_prices)} prices" if new_prices else "NO DATA (network/rate-limit?)"
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {status} in {elapsed}s")
+    gc.collect()
 
 
 # ─── Background price thread ──────────────────────────────────────────────
