@@ -19,7 +19,7 @@ from core.fetcher import background_updater, mktcap_updater
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "https://launchpad-server.onrender.com","https://ruliad.in"])
+CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "https://launchpad-server.onrender.com", "https://ruliad.in", "https://web-production-f7b54.up.railway.app"])
 
 
 # ---------------------------------------------------------------------------
